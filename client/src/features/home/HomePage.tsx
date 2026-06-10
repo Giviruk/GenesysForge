@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
 import { getProjectStatus } from '../../api/projectStatus'
 import type { CreateCharacterDraftRequest } from '../../api/characters/CreateCharacterDraftRequest'
+import { RulesetSelect } from '../rules/RulesetSelect'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { useWorkspaceStore } from '../../stores/useWorkspaceStore'
 import './HomePage.css'
@@ -15,16 +17,13 @@ const navigation = [
 
 const quickActions = ['Создать черновик', 'Импортировать правила', 'Проверить контракты']
 
-const demoRulesets = [
-  { id: '11111111-1111-1111-1111-111111111111', name: 'Демо Genesys' },
-  { id: '22222222-2222-2222-2222-222222222222', name: 'Своя песочница' },
-] as const
-
 export function HomePage() {
   const activeSection = useWorkspaceStore((state) => state.activeSection)
   const lastDraftName = useWorkspaceStore((state) => state.lastDraftName)
+  const selectedRulesetId = useWorkspaceStore((state) => state.selectedRulesetId)
   const setActiveSection = useWorkspaceStore((state) => state.setActiveSection)
   const setLastDraftName = useWorkspaceStore((state) => state.setLastDraftName)
+  const setSelectedRulesetId = useWorkspaceStore((state) => state.setSelectedRulesetId)
   const session = useAuthStore((state) => state.session)
   const clearSession = useAuthStore((state) => state.clearSession)
 
@@ -38,12 +37,21 @@ export function HomePage() {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<CreateCharacterDraftRequest>({
     defaultValues: {
       name: '',
-      rulesetId: demoRulesets[0].id,
+      rulesetId: selectedRulesetId ?? '',
     },
   })
+
+  const handleRulesetChange = useCallback(
+    (nextRulesetId: string) => {
+      setSelectedRulesetId(nextRulesetId)
+      setValue('rulesetId', nextRulesetId, { shouldValidate: true })
+    },
+    [setSelectedRulesetId, setValue],
+  )
 
   function handleCreateDraft(values: CreateCharacterDraftRequest) {
     setLastDraftName(values.name.trim())
@@ -145,16 +153,14 @@ export function HomePage() {
             </label>
             {errors.name ? <p className="form-error">{errors.name.message}</p> : null}
 
-            <label>
-              Набор правил
-              <select {...register('rulesetId')}>
-                {demoRulesets.map((ruleset) => (
-                  <option key={ruleset.id} value={ruleset.id}>
-                    {ruleset.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <input
+              {...register('rulesetId', {
+                required: 'Выберите набор правил',
+              })}
+              type="hidden"
+            />
+            <RulesetSelect value={selectedRulesetId ?? ''} onChange={handleRulesetChange} />
+            {errors.rulesetId ? <p className="form-error">{errors.rulesetId.message}</p> : null}
 
             <button className="submit-button" type="submit">
               Сохранить локальный черновик

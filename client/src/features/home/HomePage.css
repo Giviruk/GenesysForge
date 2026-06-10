@@ -222,6 +222,28 @@
   font-weight: 750;
 }
 
+.ruleset-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.ruleset-label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.ruleset-summary {
+  margin: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #1d4ed8;
+  background: #eaf1ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .draft-card input,
 .draft-card select {
   width: 100%;
