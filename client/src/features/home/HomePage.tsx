@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
 import { getProjectStatus } from '../../api/projectStatus'
 import type { CreateCharacterDraftRequest } from '../../api/characters/CreateCharacterDraftRequest'
+import { useAuthStore } from '../../stores/useAuthStore'
 import { useWorkspaceStore } from '../../stores/useWorkspaceStore'
 import './HomePage.css'
 
@@ -24,6 +25,8 @@ export function HomePage() {
   const lastDraftName = useWorkspaceStore((state) => state.lastDraftName)
   const setActiveSection = useWorkspaceStore((state) => state.setActiveSection)
   const setLastDraftName = useWorkspaceStore((state) => state.setLastDraftName)
+  const session = useAuthStore((state) => state.session)
+  const clearSession = useAuthStore((state) => state.clearSession)
 
   const statusQuery = useQuery({
     queryKey: ['project-status'],
@@ -74,7 +77,25 @@ export function HomePage() {
           <NavLink to="/" className="topbar-link">
             Dashboard
           </NavLink>
-          <span className="environment">Local MVP</span>
+          <div className="topbar-actions">
+            {session ? (
+              <>
+                <span className="environment">Signed in as {session.user.displayName}</span>
+                <button className="text-button" type="button" onClick={clearSession}>
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login" className="topbar-link">
+                  Sign in
+                </NavLink>
+                <NavLink to="/register" className="environment">
+                  Create account
+                </NavLink>
+              </>
+            )}
+          </div>
         </header>
 
         <section className="hero-panel" aria-labelledby="welcome-heading">

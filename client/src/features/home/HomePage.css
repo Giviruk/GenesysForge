@@ -78,6 +78,12 @@
   font-weight: 750;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .environment {
   border: 1px solid #d7dfec;
   border-radius: 8px;
@@ -86,6 +92,16 @@
   background: #ffffff;
   font-size: 13px;
   font-weight: 700;
+}
+
+.text-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #1d4ed8;
+  background: #eaf1ff;
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .hero-panel {
@@ -259,5 +275,11 @@
 
   .workspace {
     padding: 18px;
+  }
+
+  .topbar,
+  .topbar-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
