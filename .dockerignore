@@ -1,0 +1,10 @@
+.git
+.github
+.obsidian
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.DS_Store
+**/*.user
+**/*.suo

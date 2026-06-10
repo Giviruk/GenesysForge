@@ -1,0 +1,19 @@
+{
+    email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+    encode zstd gzip
+
+    handle_path /api/* {
+        reverse_proxy webapi:8080
+    }
+
+    handle /health {
+        reverse_proxy webapi:8080
+    }
+
+    handle {
+        reverse_proxy client:80
+    }
+}
