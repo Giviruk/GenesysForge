@@ -1,6 +1,8 @@
 using GenesysForge.Application.Auth;
+using GenesysForge.Application.Rules;
 using GenesysForge.Infrastructure.Auth;
 using GenesysForge.Infrastructure.Persistence;
+using GenesysForge.Infrastructure.Rules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +26,7 @@ public static class DependencyInjection
                 npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
         });
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddScoped<IRulesRepository, RulesRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddSingleton<IPasswordHashService, PasswordHashService>();
         services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
