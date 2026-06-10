@@ -23,7 +23,10 @@ public static class DependencyInjection
                 connectionString,
                 npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
         });
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddSingleton<IPasswordHashService, PasswordHashService>();
+        services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
 
         return services;
     }

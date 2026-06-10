@@ -143,6 +143,7 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
           REGISTRY_IMAGE: ${{ env.REGISTRY_IMAGE }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
@@ -155,6 +156,7 @@ jobs:
             POSTGRES_DB="$POSTGRES_DB" \
             POSTGRES_USER="$POSTGRES_USER" \
             POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            JWT_SIGNING_KEY="$JWT_SIGNING_KEY" \
             REGISTRY_IMAGE="$REGISTRY_IMAGE" \
             IMAGE_TAG="$IMAGE_TAG" \
             'bash -se' <<'EOF'
@@ -169,6 +171,11 @@ jobs:
             exit 1
           fi
 
+          if [ "${#JWT_SIGNING_KEY}" -lt 32 ]; then
+            echo "JWT_SIGNING_KEY must contain at least 32 characters."
+            exit 1
+          fi
+
           {
             printf 'APP_DOMAIN=%s\n' "$APP_DOMAIN"
             printf 'ACME_EMAIL=%s\n' "$ACME_EMAIL"
@@ -177,6 +184,7 @@ jobs:
             printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB"
             printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER"
             printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
+            printf 'JWT_SIGNING_KEY=%s\n' "$JWT_SIGNING_KEY"
           } > .env
 
           if [ -n "${GHCR_TOKEN:-}" ]; then

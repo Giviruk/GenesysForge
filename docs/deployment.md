@@ -91,8 +91,15 @@ Repository settings -> Secrets and variables -> Actions -> New repository secret
 | `POSTGRES_DB` | `genesys_forge` |
 | `POSTGRES_USER` | `genesys_forge` |
 | `POSTGRES_PASSWORD` | strong database password |
+| `JWT_SIGNING_KEY` | random string with at least 32 characters |
 
 `GHCR_TOKEN` is needed if GHCR packages are private. If packages are public, it can be omitted.
+
+Generate `JWT_SIGNING_KEY` locally:
+
+```powershell
+[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(64))
+```
 
 ## Local Docker check
 
