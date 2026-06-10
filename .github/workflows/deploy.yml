@@ -140,6 +140,9 @@ jobs:
           ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           REGISTRY_IMAGE: ${{ env.REGISTRY_IMAGE }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
@@ -149,18 +152,31 @@ jobs:
             ACME_EMAIL="$ACME_EMAIL" \
             GHCR_USERNAME="$GHCR_USERNAME" \
             GHCR_TOKEN="$GHCR_TOKEN" \
+            POSTGRES_DB="$POSTGRES_DB" \
+            POSTGRES_USER="$POSTGRES_USER" \
+            POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
             REGISTRY_IMAGE="$REGISTRY_IMAGE" \
             IMAGE_TAG="$IMAGE_TAG" \
             'bash -se' <<'EOF'
           set -euo pipefail
 
           cd /opt/genesys-forge
+          POSTGRES_DB="${POSTGRES_DB:-genesys_forge}"
+          POSTGRES_USER="${POSTGRES_USER:-genesys_forge}"
+
+          if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+            echo "POSTGRES_PASSWORD is required."
+            exit 1
+          fi
 
           {
             printf 'APP_DOMAIN=%s\n' "$APP_DOMAIN"
             printf 'ACME_EMAIL=%s\n' "$ACME_EMAIL"
             printf 'REGISTRY_IMAGE=%s\n' "$REGISTRY_IMAGE"
             printf 'IMAGE_TAG=%s\n' "$IMAGE_TAG"
+            printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB"
+            printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER"
+            printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
           } > .env
 
           if [ -n "${GHCR_TOKEN:-}" ]; then
