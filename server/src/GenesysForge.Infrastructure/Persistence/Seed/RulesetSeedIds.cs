@@ -13,4 +13,6 @@ internal static class RulesetSeedIds
     public static readonly Guid MysticDefinitionId = Guid.Parse("10000000-0000-0000-0000-000000000009");
     public static readonly Guid ResolveDefinitionId = Guid.Parse("10000000-0000-0000-0000-00000000000a");
     public static readonly Guid TacticsDefinitionId = Guid.Parse("10000000-0000-0000-0000-00000000000b");
+    public static readonly Guid SteadyStanceTalentId = Guid.Parse("10000000-0000-0000-0000-00000000000c");
+    public static readonly Guid SteadyStanceDefinitionId = Guid.Parse("10000000-0000-0000-0000-00000000000d");
 }

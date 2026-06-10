@@ -3,6 +3,7 @@ using System;
 using GenesysForge.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GenesysForge.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260610194034_AddCharacters")]
+    partial class AddCharacters
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,7 +229,7 @@ namespace GenesysForge.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000a"),
-                            ContentJson = "{\"characteristic\":\"willpower\",\"isCareerDefault\":false,\"cost\":{\"type\":\"rank-table\",\"career\":{\"1\":5,\"2\":10,\"3\":15,\"4\":20,\"5\":25},\"nonCareer\":{\"1\":10,\"2\":15,\"3\":20,\"4\":25,\"5\":30}}}",
+                            ContentJson = "{\"characteristic\":\"willpower\",\"isCareerDefault\":false}",
                             Key = "skill-profile",
                             RuleEntityId = new Guid("10000000-0000-0000-0000-000000000006"),
                             SourceVersionId = new Guid("10000000-0000-0000-0000-000000000003")
@@ -234,17 +237,9 @@ namespace GenesysForge.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("10000000-0000-0000-0000-00000000000b"),
-                            ContentJson = "{\"characteristic\":\"intellect\",\"isCareerDefault\":false,\"cost\":{\"type\":\"rank-table\",\"career\":{\"1\":5,\"2\":10,\"3\":15,\"4\":20,\"5\":25},\"nonCareer\":{\"1\":10,\"2\":15,\"3\":20,\"4\":25,\"5\":30}}}",
+                            ContentJson = "{\"characteristic\":\"intellect\",\"isCareerDefault\":false}",
                             Key = "skill-profile",
                             RuleEntityId = new Guid("10000000-0000-0000-0000-000000000007"),
-                            SourceVersionId = new Guid("10000000-0000-0000-0000-000000000003")
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-00000000000d"),
-                            ContentJson = "{\"tier\":1,\"activation\":\"passive\",\"requirements\":[],\"cost\":{\"type\":\"fixed\",\"xp\":5}}",
-                            Key = "talent-profile",
-                            RuleEntityId = new Guid("10000000-0000-0000-0000-00000000000c"),
                             SourceVersionId = new Guid("10000000-0000-0000-0000-000000000003")
                         });
                 });
@@ -319,15 +314,6 @@ namespace GenesysForge.Infrastructure.Persistence.Migrations
                             EntityType = "skill",
                             Key = "tactics",
                             Name = "Тактика",
-                            RulesetId = new Guid("10000000-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-00000000000c"),
-                            Description = "Демо-талант с фиксированной стоимостью для проверки покупки талантов.",
-                            EntityType = "talent",
-                            Key = "steady-stance",
-                            Name = "Устойчивая стойка",
                             RulesetId = new Guid("10000000-0000-0000-0000-000000000001")
                         });
                 });
