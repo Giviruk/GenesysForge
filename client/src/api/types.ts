@@ -1,3 +1,4 @@
+export * from './authApi'
 export * from './auth/AuthSessionResponse'
 export * from './auth/LoginRequest'
 export * from './auth/RegisterRequest'

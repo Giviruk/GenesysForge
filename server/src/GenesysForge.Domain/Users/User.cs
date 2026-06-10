@@ -14,7 +14,7 @@ public sealed class User : Entity
     private User(string email, string displayName, string passwordHash, DateTimeOffset createdAt)
     {
         Email = NormalizeRequired(email, nameof(email), MaxEmailLength).ToLowerInvariant();
-        NormalizedEmail = Email.ToUpperInvariant();
+        NormalizedEmail = NormalizeEmail(Email);
         DisplayName = NormalizeRequired(displayName, nameof(displayName), MaxDisplayNameLength);
         PasswordHash = NormalizeRequired(passwordHash, nameof(passwordHash), MaxPasswordHashLength);
         CreatedAt = createdAt;
@@ -35,6 +35,11 @@ public sealed class User : Entity
     public static User Create(string email, string displayName, string passwordHash, DateTimeOffset? createdAt = null)
     {
         return new User(email, displayName, passwordHash, createdAt ?? DateTimeOffset.UtcNow);
+    }
+
+    public static string NormalizeEmail(string email)
+    {
+        return NormalizeRequired(email, nameof(email), MaxEmailLength).ToUpperInvariant();
     }
 
     public void Rename(string displayName, DateTimeOffset? updatedAt = null)
