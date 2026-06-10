@@ -148,3 +148,12 @@ docker compose logs -f postgres
 curl -I https://77-239-101-72.sslip.io
 curl https://77-239-101-72.sslip.io/api/health
 ```
+
+If PostgreSQL was started once with an invalid PostgreSQL 18 data mount before the first successful deployment, remove the empty volume and deploy again:
+
+```bash
+cd /opt/genesys-forge
+docker compose down
+docker volume rm genesysforge_postgres_data
+docker compose up -d
+```
