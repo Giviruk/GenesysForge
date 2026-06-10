@@ -92,7 +92,9 @@ test('renders the frontend starter screen', async () => {
   ).toBeInTheDocument()
 
   expect(await screen.findByText('.NET 10')).toBeInTheDocument()
-  expect(await screen.findByRole('combobox', { name: /набор правил/i })).toHaveValue(demoRulesetId)
+  expect(await screen.findByRole('combobox', { name: /набор правил/i })).toHaveTextContent(
+    /Демо-набор Genesys Forge v1\.0/i,
+  )
   expect(await screen.findByText(/элементов правил: 1/i)).toBeInTheDocument()
   expect(screen.getByLabelText(/имя персонажа/i)).toBeInTheDocument()
 })

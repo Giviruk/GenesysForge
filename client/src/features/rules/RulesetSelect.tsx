@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useRuleCatalog, useRulesets } from './useRulesets'
 
 type RulesetSelectProps = {
@@ -7,6 +7,10 @@ type RulesetSelectProps = {
 }
 
 export function RulesetSelect({ value, onChange }: RulesetSelectProps) {
+  const labelId = useId()
+  const triggerId = useId()
+  const listboxId = useId()
+  const [isOpen, setIsOpen] = useState(false)
   const rulesetsQuery = useRulesets()
   const catalogQuery = useRuleCatalog(value)
 
@@ -50,18 +54,59 @@ export function RulesetSelect({ value, onChange }: RulesetSelectProps) {
     )
   }
 
+  const selectedRuleset = rulesets.find((ruleset) => ruleset.id === value) ?? rulesets[0]
+
+  function handleSelect(rulesetId: string) {
+    onChange(rulesetId)
+    setIsOpen(false)
+  }
+
   return (
     <div className="ruleset-panel">
-      <label>
-        Набор правил
-        <select value={value} onChange={(event) => onChange(event.target.value)}>
-          {rulesets.map((ruleset) => (
-            <option key={ruleset.id} value={ruleset.id}>
-              {ruleset.name} v{ruleset.version}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="ruleset-selector">
+        <span id={labelId} className="ruleset-label">
+          Набор правил
+        </span>
+        <button
+          id={triggerId}
+          aria-controls={isOpen ? listboxId : undefined}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-labelledby={`${labelId} ${triggerId}`}
+          className="ruleset-trigger"
+          role="combobox"
+          type="button"
+          onClick={() => setIsOpen((current) => !current)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setIsOpen(false)
+            }
+          }}
+        >
+          <span>{selectedRuleset.name} v{selectedRuleset.version}</span>
+          <span className="ruleset-chevron" aria-hidden="true">
+            ▾
+          </span>
+        </button>
+
+        {isOpen ? (
+          <div id={listboxId} className="ruleset-options" role="listbox" aria-labelledby={labelId}>
+            {rulesets.map((ruleset) => (
+              <button
+                key={ruleset.id}
+                aria-selected={ruleset.id === selectedRuleset.id}
+                className={ruleset.id === selectedRuleset.id ? 'ruleset-option selected' : 'ruleset-option'}
+                role="option"
+                type="button"
+                onClick={() => handleSelect(ruleset.id)}
+              >
+                <span>{ruleset.name}</span>
+                <small>v{ruleset.version}</small>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       {catalogQuery.isPending ? <p className="muted">Загружаем каталог выбранного набора...</p> : null}
       {catalogQuery.isError ? (
