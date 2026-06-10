@@ -103,6 +103,30 @@ docker build -f client/Dockerfile -t genesys-forge-client .
 
 For production compose, images are pulled from GHCR by GitHub Actions.
 
+## Database access from local machine
+
+PostgreSQL is published only on the VPS loopback interface:
+
+```yaml
+127.0.0.1:5432:5432
+```
+
+Use an SSH tunnel from your local machine:
+
+```powershell
+ssh -L 5433:127.0.0.1:5432 root@77.239.101.72
+```
+
+Then connect your database client to:
+
+| Field | Value |
+| --- | --- |
+| Host | `localhost` |
+| Port | `5433` |
+| Database | `genesys_forge` |
+| User | `genesys_forge` |
+| Password | `POSTGRES_PASSWORD` secret value |
+
 ## Deployment flow
 
 On push to `master`, GitHub Actions:
