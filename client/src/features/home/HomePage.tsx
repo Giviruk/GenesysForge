@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
 import { getProjectStatus } from '../../api/projectStatus'
-import type { DraftCharacterForm } from '../../api/types'
+import type { CreateCharacterDraftRequest } from '../../api/characters/CreateCharacterDraftRequest'
 import { useWorkspaceStore } from '../../stores/useWorkspaceStore'
 import './HomePage.css'
 
@@ -13,6 +13,11 @@ const navigation = [
 ] as const
 
 const quickActions = ['Create draft', 'Import ruleset', 'Review contracts']
+
+const demoRulesets = [
+  { id: '11111111-1111-1111-1111-111111111111', name: 'Genesys Demo' },
+  { id: '22222222-2222-2222-2222-222222222222', name: 'Custom Sandbox' },
+] as const
 
 export function HomePage() {
   const activeSection = useWorkspaceStore((state) => state.activeSection)
@@ -30,16 +35,16 @@ export function HomePage() {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<DraftCharacterForm>({
+  } = useForm<CreateCharacterDraftRequest>({
     defaultValues: {
       name: '',
-      ruleset: 'Genesys Demo',
+      rulesetId: demoRulesets[0].id,
     },
   })
 
-  function handleCreateDraft(values: DraftCharacterForm) {
+  function handleCreateDraft(values: CreateCharacterDraftRequest) {
     setLastDraftName(values.name.trim())
-    reset({ name: '', ruleset: values.ruleset })
+    reset({ name: '', rulesetId: values.rulesetId })
   }
 
   return (
@@ -120,9 +125,12 @@ export function HomePage() {
 
             <label>
               Ruleset
-              <select {...register('ruleset')}>
-                <option>Genesys Demo</option>
-                <option>Custom Sandbox</option>
+              <select {...register('rulesetId')}>
+                {demoRulesets.map((ruleset) => (
+                  <option key={ruleset.id} value={ruleset.id}>
+                    {ruleset.name}
+                  </option>
+                ))}
               </select>
             </label>
 

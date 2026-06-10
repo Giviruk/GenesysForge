@@ -1,8 +1,4 @@
-export type ProjectStatus = {
-  label: string
-  value: string
-  detail: string
-}
+import type { ProjectStatus } from './projectStatus/ProjectStatus'
 
 const projectStatus: ProjectStatus[] = [
   {

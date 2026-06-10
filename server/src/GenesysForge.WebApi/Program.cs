@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using GenesysForge.Application;
 using GenesysForge.Infrastructure;
 
@@ -5,6 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
