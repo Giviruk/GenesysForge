@@ -1,3 +1,5 @@
+using GenesysForge.Application.Auth;
+using GenesysForge.Infrastructure.Auth;
 using GenesysForge.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +23,7 @@ public static class DependencyInjection
                 connectionString,
                 npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
         });
+        services.AddSingleton<IPasswordHashService, PasswordHashService>();
 
         return services;
     }
