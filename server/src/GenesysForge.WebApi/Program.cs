@@ -1,12 +1,13 @@
 using System.Text.Json.Serialization;
 using GenesysForge.Application;
 using GenesysForge.Infrastructure;
+using GenesysForge.WebApi;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -20,6 +21,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.ApplyDatabaseMigrations();
 
 if (app.Environment.IsDevelopment())
 {

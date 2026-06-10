@@ -4,11 +4,11 @@ Production deployment runs on a VPS with Docker Compose and Caddy.
 
 ## Target
 
-- Domain: `vm829877.hosted-by.u1host.com`
+- Domain: `77-239-101-72.sslip.io`
 - Server IP: `77.239.101.72`
 - Deploy directory: `/opt/genesys-forge`
-- Public app URL: `https://vm829877.hosted-by.u1host.com`
-- API prefix: `https://vm829877.hosted-by.u1host.com/api`
+- Public app URL: `https://77-239-101-72.sslip.io`
+- API prefix: `https://77-239-101-72.sslip.io/api`
 
 ## VPS bootstrap
 
@@ -84,10 +84,13 @@ Repository settings -> Secrets and variables -> Actions -> New repository secret
 | `VPS_PORT` | `22` |
 | `VPS_USER` | `root` |
 | `VPS_SSH_KEY` | private deploy key contents |
-| `APP_DOMAIN` | `vm829877.hosted-by.u1host.com` |
+| `APP_DOMAIN` | `77-239-101-72.sslip.io` |
 | `ACME_EMAIL` | email for Let's Encrypt notices |
 | `GHCR_USERNAME` | GitHub username or deploy user |
 | `GHCR_TOKEN` | GitHub PAT with package read access |
+| `POSTGRES_DB` | `genesys_forge` |
+| `POSTGRES_USER` | `genesys_forge` |
+| `POSTGRES_PASSWORD` | strong database password |
 
 `GHCR_TOKEN` is needed if GHCR packages are private. If packages are public, it can be omitted.
 
@@ -117,6 +120,7 @@ cd /opt/genesys-forge
 docker compose ps
 docker compose logs -f caddy
 docker compose logs -f webapi
-curl -I https://vm829877.hosted-by.u1host.com
-curl https://vm829877.hosted-by.u1host.com/api/health
+docker compose logs -f postgres
+curl -I https://77-239-101-72.sslip.io
+curl https://77-239-101-72.sslip.io/api/health
 ```
