@@ -32,7 +32,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
         }
         catch (ValidationException exception)
         {
-            return ValidationProblem(ToErrorDictionary(exception));
+            return BadRequest(CreateValidationProblemDetails(exception));
         }
         catch (EmailAlreadyRegisteredException exception)
         {
@@ -63,7 +63,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
         }
         catch (ValidationException exception)
         {
-            return ValidationProblem(ToErrorDictionary(exception));
+            return BadRequest(CreateValidationProblemDetails(exception));
         }
         catch (InvalidCredentialsException exception)
         {
@@ -74,6 +74,15 @@ public sealed class AuthController(ISender sender) : ControllerBase
                 Status = StatusCodes.Status401Unauthorized
             });
         }
+    }
+
+    private static ValidationProblemDetails CreateValidationProblemDetails(ValidationException exception)
+    {
+        return new ValidationProblemDetails(ToErrorDictionary(exception))
+        {
+            Title = "Validation failed.",
+            Status = StatusCodes.Status400BadRequest
+        };
     }
 
     private static Dictionary<string, string[]> ToErrorDictionary(ValidationException exception)
