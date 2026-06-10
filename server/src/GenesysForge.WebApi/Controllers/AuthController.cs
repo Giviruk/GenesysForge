@@ -38,7 +38,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
         {
             return Conflict(new ProblemDetails
             {
-                Title = "Email already registered.",
+                Title = "Email уже зарегистрирован.",
                 Detail = exception.Message,
                 Status = StatusCodes.Status409Conflict
             });
@@ -69,7 +69,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
         {
             return Unauthorized(new ProblemDetails
             {
-                Title = "Invalid credentials.",
+                Title = "Неверные учетные данные.",
                 Detail = exception.Message,
                 Status = StatusCodes.Status401Unauthorized
             });
@@ -80,7 +80,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
     {
         return new ValidationProblemDetails(ToErrorDictionary(exception))
         {
-            Title = "Validation failed.",
+            Title = "Ошибка валидации.",
             Status = StatusCodes.Status400BadRequest
         };
     }

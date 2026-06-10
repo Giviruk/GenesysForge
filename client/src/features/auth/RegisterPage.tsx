@@ -40,19 +40,19 @@ export function RegisterPage() {
       <section className="auth-panel" aria-labelledby="register-heading">
         <header>
           <NavLink to="/" className="auth-secondary">
-            Back to dashboard
+            Вернуться на панель
           </NavLink>
-          <h1 id="register-heading">Create account</h1>
-          <p>Start a workspace for your characters, rulesets, and future sheets.</p>
+          <h1 id="register-heading">Создание аккаунта</h1>
+          <p>Откройте рабочее пространство для персонажей, наборов правил и будущих листов.</p>
         </header>
 
         <form className="auth-form" onSubmit={handleSubmit(handleRegister)}>
           <label>
-            Display name
+            Отображаемое имя
             <input
               {...register('displayName', {
-                required: 'Display name is required',
-                maxLength: { value: 100, message: 'Use 100 characters or fewer' },
+                required: 'Укажите отображаемое имя',
+                maxLength: { value: 100, message: 'Введите не больше 100 символов' },
               })}
               autoComplete="name"
             />
@@ -63,10 +63,10 @@ export function RegisterPage() {
             Email
             <input
               {...register('email', {
-                required: 'Email is required',
+                required: 'Укажите email',
                 pattern: {
                   value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: 'Use a valid email address',
+                  message: 'Введите корректный email',
                 },
               })}
               autoComplete="email"
@@ -76,12 +76,12 @@ export function RegisterPage() {
           {errors.email ? <p className="auth-error">{errors.email.message}</p> : null}
 
           <label>
-            Password
+            Пароль
             <input
               {...register('password', {
-                required: 'Password is required',
-                minLength: { value: 8, message: 'Use at least 8 characters' },
-                maxLength: { value: 128, message: 'Use 128 characters or fewer' },
+                required: 'Укажите пароль',
+                minLength: { value: 8, message: 'Введите минимум 8 символов' },
+                maxLength: { value: 128, message: 'Введите не больше 128 символов' },
               })}
               autoComplete="new-password"
               type="password"
@@ -92,12 +92,12 @@ export function RegisterPage() {
           {mutation.isError ? <p className="auth-error">{getErrorMessage(mutation.error)}</p> : null}
 
           <button className="auth-submit" disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? 'Creating account...' : 'Create account'}
+            {mutation.isPending ? 'Создаем аккаунт...' : 'Создать аккаунт'}
           </button>
         </form>
 
         <NavLink to="/login" className="auth-secondary">
-          I already have an account
+          У меня уже есть аккаунт
         </NavLink>
       </section>
     </main>
@@ -109,5 +109,5 @@ function getErrorMessage(error: Error) {
     return error.message
   }
 
-  return 'Could not create account.'
+  return 'Не удалось создать аккаунт.'
 }

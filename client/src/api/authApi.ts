@@ -39,7 +39,7 @@ async function postJson<TResponse>(path: string, body: unknown): Promise<TRespon
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
-  const fallback = `Request failed with status ${response.status}`
+  const fallback = `Запрос завершился ошибкой ${response.status}`
 
   try {
     const payload = (await response.json()) as { title?: string; detail?: string }

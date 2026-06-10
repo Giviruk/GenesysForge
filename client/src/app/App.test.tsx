@@ -13,37 +13,37 @@ test('renders the frontend starter screen', async () => {
 
   expect(
     screen.getByRole('heading', {
-      name: /build characters from a rules-driven core/i,
+      name: /создавайте персонажей на основе правил/i,
     }),
   ).toBeInTheDocument()
 
   expect(await screen.findByText('.NET 10')).toBeInTheDocument()
-  expect(screen.getByLabelText(/character name/i)).toBeInTheDocument()
+  expect(screen.getByLabelText(/имя персонажа/i)).toBeInTheDocument()
 })
 
 test('validates the login form', async () => {
   const user = userEvent.setup()
   render(<App />)
 
-  await user.click(screen.getByRole('link', { name: /sign in/i }))
-  expect(await screen.findByRole('heading', { name: /sign in/i })).toBeInTheDocument()
+  await user.click(screen.getByRole('link', { name: /войти/i }))
+  expect(await screen.findByRole('heading', { name: /вход/i })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: /sign in/i }))
+  await user.click(screen.getByRole('button', { name: /войти/i }))
 
-  expect(await screen.findByText(/email is required/i)).toBeInTheDocument()
-  expect(screen.getByText(/password is required/i)).toBeInTheDocument()
+  expect(await screen.findByText(/укажите email/i)).toBeInTheDocument()
+  expect(screen.getByText(/укажите пароль/i)).toBeInTheDocument()
 })
 
 test('validates the register form', async () => {
   const user = userEvent.setup()
   render(<App />)
 
-  await user.click(screen.getByRole('link', { name: /create account/i }))
-  expect(await screen.findByRole('heading', { name: /create account/i })).toBeInTheDocument()
+  await user.click(screen.getByRole('link', { name: /создать аккаунт/i }))
+  expect(await screen.findByRole('heading', { name: /создание аккаунта/i })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: /create account/i }))
+  await user.click(screen.getByRole('button', { name: /создать аккаунт/i }))
 
-  expect(await screen.findByText(/display name is required/i)).toBeInTheDocument()
-  expect(screen.getByText(/email is required/i)).toBeInTheDocument()
-  expect(screen.getByText(/password is required/i)).toBeInTheDocument()
+  expect(await screen.findByText(/укажите отображаемое имя/i)).toBeInTheDocument()
+  expect(screen.getByText(/укажите email/i)).toBeInTheDocument()
+  expect(screen.getByText(/укажите пароль/i)).toBeInTheDocument()
 })

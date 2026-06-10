@@ -42,10 +42,10 @@ export function LoginPage() {
       <section className="auth-panel" aria-labelledby="login-heading">
         <header>
           <NavLink to="/" className="auth-secondary">
-            Back to dashboard
+            Вернуться на панель
           </NavLink>
-          <h1 id="login-heading">Sign in</h1>
-          <p>Continue building characters with your saved workspace.</p>
+          <h1 id="login-heading">Вход</h1>
+          <p>Продолжайте создавать персонажей в сохраненном рабочем пространстве.</p>
         </header>
 
         {locationState?.message ? <p className="auth-message">{locationState.message}</p> : null}
@@ -55,10 +55,10 @@ export function LoginPage() {
             Email
             <input
               {...register('email', {
-                required: 'Email is required',
+                required: 'Укажите email',
                 pattern: {
                   value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: 'Use a valid email address',
+                  message: 'Введите корректный email',
                 },
               })}
               autoComplete="email"
@@ -68,10 +68,10 @@ export function LoginPage() {
           {errors.email ? <p className="auth-error">{errors.email.message}</p> : null}
 
           <label>
-            Password
+            Пароль
             <input
               {...register('password', {
-                required: 'Password is required',
+                required: 'Укажите пароль',
               })}
               autoComplete="current-password"
               type="password"
@@ -82,12 +82,12 @@ export function LoginPage() {
           {mutation.isError ? <p className="auth-error">{getErrorMessage(mutation.error)}</p> : null}
 
           <button className="auth-submit" disabled={mutation.isPending} type="submit">
-            {mutation.isPending ? 'Signing in...' : 'Sign in'}
+            {mutation.isPending ? 'Входим...' : 'Войти'}
           </button>
         </form>
 
         <NavLink to="/register" className="auth-secondary">
-          Create an account
+          Создать аккаунт
         </NavLink>
       </section>
     </main>
@@ -99,5 +99,5 @@ function getErrorMessage(error: Error) {
     return error.message
   }
 
-  return 'Could not sign in.'
+  return 'Не удалось войти.'
 }

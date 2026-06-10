@@ -8,10 +8,14 @@ public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
     {
         RuleFor(command => command.Email)
             .NotEmpty()
+            .WithMessage("Укажите email.")
             .MaximumLength(320)
-            .EmailAddress();
+            .WithMessage("Email должен содержать не больше 320 символов.")
+            .EmailAddress()
+            .WithMessage("Введите корректный email.");
 
         RuleFor(command => command.Password)
-            .NotEmpty();
+            .NotEmpty()
+            .WithMessage("Укажите пароль.");
     }
 }
