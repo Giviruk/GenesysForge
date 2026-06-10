@@ -2,19 +2,19 @@ import type { ProjectStatus } from './projectStatus/ProjectStatus'
 
 const projectStatus: ProjectStatus[] = [
   {
-    label: 'Backend',
+    label: 'Бэкенд',
     value: '.NET 10',
-    detail: 'Clean Architecture skeleton is ready',
+    detail: 'Основа Clean Architecture готова',
   },
   {
-    label: 'Frontend',
+    label: 'Фронтенд',
     value: 'Vite',
-    detail: 'React app shell is online',
+    detail: 'Каркас React-приложения запущен',
   },
   {
-    label: 'Workflow',
-    value: 'Draft',
-    detail: 'Character creation starts here',
+    label: 'Процесс',
+    value: 'Черновик',
+    detail: 'Создание персонажа начинается здесь',
   },
 ]
 

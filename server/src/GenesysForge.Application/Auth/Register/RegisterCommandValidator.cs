@@ -8,16 +8,24 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
     {
         RuleFor(command => command.Email)
             .NotEmpty()
+            .WithMessage("Укажите email.")
             .MaximumLength(320)
-            .EmailAddress();
+            .WithMessage("Email должен содержать не больше 320 символов.")
+            .EmailAddress()
+            .WithMessage("Введите корректный email.");
 
         RuleFor(command => command.Password)
             .NotEmpty()
+            .WithMessage("Укажите пароль.")
             .MinimumLength(8)
-            .MaximumLength(128);
+            .WithMessage("Пароль должен содержать минимум 8 символов.")
+            .MaximumLength(128)
+            .WithMessage("Пароль должен содержать не больше 128 символов.");
 
         RuleFor(command => command.DisplayName)
             .NotEmpty()
-            .MaximumLength(100);
+            .WithMessage("Укажите отображаемое имя.")
+            .MaximumLength(100)
+            .WithMessage("Отображаемое имя должно содержать не больше 100 символов.");
     }
 }

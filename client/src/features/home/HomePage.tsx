@@ -3,20 +3,21 @@ import { useForm } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
 import { getProjectStatus } from '../../api/projectStatus'
 import type { CreateCharacterDraftRequest } from '../../api/characters/CreateCharacterDraftRequest'
+import { useAuthStore } from '../../stores/useAuthStore'
 import { useWorkspaceStore } from '../../stores/useWorkspaceStore'
 import './HomePage.css'
 
 const navigation = [
-  { id: 'characters', label: 'Characters' },
-  { id: 'rulesets', label: 'Rulesets' },
-  { id: 'settings', label: 'Settings' },
+  { id: 'characters', label: 'Персонажи' },
+  { id: 'rulesets', label: 'Наборы правил' },
+  { id: 'settings', label: 'Настройки' },
 ] as const
 
-const quickActions = ['Create draft', 'Import ruleset', 'Review contracts']
+const quickActions = ['Создать черновик', 'Импортировать правила', 'Проверить контракты']
 
 const demoRulesets = [
-  { id: '11111111-1111-1111-1111-111111111111', name: 'Genesys Demo' },
-  { id: '22222222-2222-2222-2222-222222222222', name: 'Custom Sandbox' },
+  { id: '11111111-1111-1111-1111-111111111111', name: 'Демо Genesys' },
+  { id: '22222222-2222-2222-2222-222222222222', name: 'Своя песочница' },
 ] as const
 
 export function HomePage() {
@@ -24,6 +25,8 @@ export function HomePage() {
   const lastDraftName = useWorkspaceStore((state) => state.lastDraftName)
   const setActiveSection = useWorkspaceStore((state) => state.setActiveSection)
   const setLastDraftName = useWorkspaceStore((state) => state.setLastDraftName)
+  const session = useAuthStore((state) => state.session)
+  const clearSession = useAuthStore((state) => state.clearSession)
 
   const statusQuery = useQuery({
     queryKey: ['project-status'],
@@ -49,7 +52,7 @@ export function HomePage() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar" aria-label="Primary">
+      <aside className="sidebar" aria-label="Основная навигация">
         <div className="brand">
           <span className="brand-mark">GF</span>
           <span>Genesys Forge</span>
@@ -72,17 +75,36 @@ export function HomePage() {
       <section className="workspace">
         <header className="topbar">
           <NavLink to="/" className="topbar-link">
-            Dashboard
+            Панель
           </NavLink>
-          <span className="environment">Local MVP</span>
+          <div className="topbar-actions">
+            {session ? (
+              <>
+                <span className="environment">Вы вошли как {session.user.displayName}</span>
+                <button className="text-button" type="button" onClick={clearSession}>
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login" className="topbar-link">
+                  Войти
+                </NavLink>
+                <NavLink to="/register" className="environment">
+                  Создать аккаунт
+                </NavLink>
+              </>
+            )}
+          </div>
         </header>
 
         <section className="hero-panel" aria-labelledby="welcome-heading">
           <div>
-            <h1 id="welcome-heading">Build characters from a rules-driven core.</h1>
+            <h1 id="welcome-heading">Создавайте персонажей на основе правил.</h1>
             <p>
-              Frontend skeleton is wired for routing, server state, local workspace state,
-              and forms. The next plan items can now attach real API contracts.
+              Основа интерфейса уже подключена к маршрутам, серверному состоянию,
+              локальному рабочему пространству и формам. Следующие шаги плана смогут
+              опираться на реальные API-контракты.
             </p>
           </div>
           <div className="hero-actions">
@@ -95,9 +117,9 @@ export function HomePage() {
         </section>
 
         <section className="content-grid">
-          <div className="status-grid" aria-label="Project status">
+          <div className="status-grid" aria-label="Статус проекта">
             {statusQuery.isPending ? (
-              <p className="muted">Loading project status...</p>
+              <p className="muted">Загружаем статус проекта...</p>
             ) : (
               statusQuery.data?.map((item) => (
                 <article className="status-card" key={item.label}>
@@ -110,13 +132,13 @@ export function HomePage() {
           </div>
 
           <form className="draft-card" onSubmit={handleSubmit(handleCreateDraft)}>
-            <h2>Create a draft</h2>
+            <h2>Создать черновик</h2>
             <label>
-              Character name
+              Имя персонажа
               <input
                 {...register('name', {
-                  required: 'Name is required',
-                  minLength: { value: 2, message: 'Use at least 2 characters' },
+                  required: 'Укажите имя персонажа',
+                  minLength: { value: 2, message: 'Введите минимум 2 символа' },
                 })}
                 placeholder="Asha Vorn"
               />
@@ -124,7 +146,7 @@ export function HomePage() {
             {errors.name ? <p className="form-error">{errors.name.message}</p> : null}
 
             <label>
-              Ruleset
+              Набор правил
               <select {...register('rulesetId')}>
                 {demoRulesets.map((ruleset) => (
                   <option key={ruleset.id} value={ruleset.id}>
@@ -135,13 +157,13 @@ export function HomePage() {
             </label>
 
             <button className="submit-button" type="submit">
-              Save local draft
+              Сохранить локальный черновик
             </button>
 
             {lastDraftName ? (
-              <p className="success-note">Last local draft: {lastDraftName}</p>
+              <p className="success-note">Последний локальный черновик: {lastDraftName}</p>
             ) : (
-              <p className="muted">Drafts are local until the character API arrives.</p>
+              <p className="muted">Черновики хранятся локально, пока API персонажей еще не готов.</p>
             )}
           </form>
         </section>
