@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
 import { getProjectStatus } from '../../api/projectStatus'
-import type { CreateCharacterDraftRequest } from '../../api/types'
+import type { CreateCharacterDraftRequest } from '../../api/characters/CreateCharacterDraftRequest'
 import { useWorkspaceStore } from '../../stores/useWorkspaceStore'
 import './HomePage.css'
 
