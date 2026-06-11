@@ -1,3 +1,4 @@
+using GenesysForge.Domain.Characters;
 using GenesysForge.Domain.Users;
 using GenesysForge.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,14 @@ namespace GenesysForge.Infrastructure.Persistence;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<Character> Characters => Set<Character>();
+
+    public DbSet<CharacterSkill> CharacterSkills => Set<CharacterSkill>();
+
+    public DbSet<CharacterSnapshot> CharacterSnapshots => Set<CharacterSnapshot>();
+
+    public DbSet<CharacterTalent> CharacterTalents => Set<CharacterTalent>();
+
     public DbSet<RuleDefinition> RuleDefinitions => Set<RuleDefinition>();
 
     public DbSet<RuleEntity> RuleEntities => Set<RuleEntity>();
@@ -17,6 +26,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<SourceBook> SourceBooks => Set<SourceBook>();
 
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<XpLedgerEntry> XpLedgerEntries => Set<XpLedgerEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

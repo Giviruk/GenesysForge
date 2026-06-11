@@ -52,7 +52,14 @@ internal static class RulesetSeedData
             "tactics",
             "Тактика",
             "Навык планирования действий и чтения ситуации.",
-            TacticsSkillId)
+            TacticsSkillId),
+        RuleEntity.Create(
+            DemoRulesetId,
+            "talent",
+            "steady-stance",
+            "Устойчивая стойка",
+            "Демо-талант с фиксированной стоимостью для проверки покупки талантов.",
+            SteadyStanceTalentId)
     ];
 
     public static IReadOnlyCollection<RuleDefinition> Definitions =>
@@ -78,7 +85,7 @@ internal static class RulesetSeedData
             DemoSourceVersionId,
             "skill-profile",
             """
-            {"characteristic":"willpower","isCareerDefault":false}
+            {"characteristic":"willpower","isCareerDefault":false,"cost":{"type":"rank-table","career":{"1":5,"2":10,"3":15,"4":20,"5":25},"nonCareer":{"1":10,"2":15,"3":20,"4":25,"5":30}}}
             """,
             ResolveDefinitionId),
         RuleDefinition.Create(
@@ -86,8 +93,16 @@ internal static class RulesetSeedData
             DemoSourceVersionId,
             "skill-profile",
             """
-            {"characteristic":"intellect","isCareerDefault":false}
+            {"characteristic":"intellect","isCareerDefault":false,"cost":{"type":"rank-table","career":{"1":5,"2":10,"3":15,"4":20,"5":25},"nonCareer":{"1":10,"2":15,"3":20,"4":25,"5":30}}}
             """,
-            TacticsDefinitionId)
+            TacticsDefinitionId),
+        RuleDefinition.Create(
+            SteadyStanceTalentId,
+            DemoSourceVersionId,
+            "talent-profile",
+            """
+            {"tier":1,"activation":"passive","requirements":[],"cost":{"type":"fixed","xp":5}}
+            """,
+            SteadyStanceDefinitionId)
     ];
 }
