@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GenesysForge.Application.Characters.RuleSnapshots;
 using GenesysForge.Application.Rules;
 using GenesysForge.Contracts.Characters;
 using GenesysForge.Domain.Characters;
@@ -43,6 +44,7 @@ public sealed class CreateCharacterDraftCommandHandler(ICharactersRepository cha
         var selectedCareer = SelectRuleEntity(careers, request.CareerId, CareerEntityType);
         var careerProfile = await GetCareerProfileAsync(selectedCareer, cancellationToken);
         var archetypeProfile = await GetArchetypeProfileAsync(selectedArchetype, cancellationToken);
+        var ruleSnapshotSource = await charactersRepository.GetRuleSnapshotSourceAsync(request.RulesetId, cancellationToken);
 
         var careerSkillKeys = careerProfile?.CareerSkillKeys.ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
         var character = Character.CreateDraft(request.OwnerUserId, request.RulesetId, request.Name);
@@ -58,13 +60,18 @@ public sealed class CreateCharacterDraftCommandHandler(ICharactersRepository cha
                 createdAt);
         }
 
+        var draftProfile = new DraftProfileSnapshot(
+            selectedArchetype?.Id,
+            selectedCareer?.Id,
+            careerProfile?.CareerSkillRanksToAssign ?? 0,
+            archetypeProfile?.Characteristics ?? new Dictionary<string, int>(),
+            archetypeProfile?.DerivedStats ?? new Dictionary<string, int>());
+
         character.AddSnapshot(
-            JsonSerializer.Serialize(new DraftProfileSnapshot(
-                selectedArchetype?.Id,
-                selectedCareer?.Id,
-                careerProfile?.CareerSkillRanksToAssign ?? 0,
-                archetypeProfile?.Characteristics ?? new Dictionary<string, int>(),
-                archetypeProfile?.DerivedStats ?? new Dictionary<string, int>())),
+            RuleSnapshotService.CreateSnapshotContent(
+                ruleSnapshotSource,
+                draftProfile,
+                createdAt),
             createdAt);
 
         await charactersRepository.AddAsync(character, cancellationToken);
@@ -131,10 +138,4 @@ public sealed class CreateCharacterDraftCommandHandler(ICharactersRepository cha
         IReadOnlyCollection<string> CareerSkillKeys,
         int CareerSkillRanksToAssign);
 
-    private sealed record DraftProfileSnapshot(
-        Guid? ArchetypeId,
-        Guid? CareerId,
-        int CareerSkillRanksToAssign,
-        IReadOnlyDictionary<string, int> Characteristics,
-        IReadOnlyDictionary<string, int> DerivedStats);
 }

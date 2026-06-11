@@ -1,4 +1,5 @@
 using GenesysForge.Application.Characters;
+using GenesysForge.Application.Characters.RuleSnapshots;
 using GenesysForge.Domain.Characters;
 using GenesysForge.Domain.Rules;
 using GenesysForge.Infrastructure.Persistence;
@@ -68,6 +69,45 @@ public sealed class CharactersRepository(AppDbContext dbContext) : ICharactersRe
                 definition => definition.RuleEntityId,
                 definition => definition.ContentJson,
                 cancellationToken);
+    }
+
+    public async Task<RuleSnapshotSource> GetRuleSnapshotSourceAsync(
+        Guid rulesetId,
+        CancellationToken cancellationToken)
+    {
+        var sourceBookIds = await dbContext.SourceBooks
+            .AsNoTracking()
+            .Where(sourceBook => sourceBook.RulesetId == rulesetId)
+            .Select(sourceBook => sourceBook.Id)
+            .ToArrayAsync(cancellationToken);
+
+        var sourceVersions = await dbContext.RuleSourceVersions
+            .AsNoTracking()
+            .Where(sourceVersion => sourceBookIds.Contains(sourceVersion.SourceBookId) && sourceVersion.IsActive)
+            .OrderBy(sourceVersion => sourceVersion.Id)
+            .ToArrayAsync(cancellationToken);
+        var sourceVersionIds = sourceVersions.Select(sourceVersion => sourceVersion.Id).ToArray();
+
+        var ruleEntities = await dbContext.RuleEntities
+            .AsNoTracking()
+            .Where(entity => entity.RulesetId == rulesetId)
+            .OrderBy(entity => entity.Id)
+            .ToArrayAsync(cancellationToken);
+        var ruleEntityIds = ruleEntities.Select(entity => entity.Id).ToArray();
+
+        var ruleDefinitions = await dbContext.RuleDefinitions
+            .AsNoTracking()
+            .Where(definition =>
+                ruleEntityIds.Contains(definition.RuleEntityId) &&
+                sourceVersionIds.Contains(definition.SourceVersionId))
+            .OrderBy(definition => definition.Id)
+            .ToArrayAsync(cancellationToken);
+
+        return new RuleSnapshotSource(
+            rulesetId,
+            sourceVersions,
+            ruleEntities,
+            ruleDefinitions);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)
