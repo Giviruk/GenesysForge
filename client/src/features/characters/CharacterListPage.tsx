@@ -68,7 +68,7 @@ export function CharacterListPage() {
               <h1 id="characters-heading">Персонажи</h1>
               <p>Черновики и готовые листы, привязанные к вашему аккаунту.</p>
             </div>
-            <NavLink to="/" className="primary-action">
+            <NavLink to="/characters/new" className="primary-action">
               Создать черновик
             </NavLink>
           </header>
@@ -103,7 +103,7 @@ export function CharacterListPage() {
             <section className="characters-empty" aria-live="polite">
               <h2>Пока нет персонажей</h2>
               <p>Создайте первый черновик, а следующие шаги мастера постепенно наполнят его правилами.</p>
-              <NavLink to="/" className="submit-button">
+              <NavLink to="/characters/new" className="submit-button">
                 Создать черновик
               </NavLink>
             </section>

@@ -1,0 +1,143 @@
+.wizard-page {
+  display: grid;
+  gap: 24px;
+}
+
+.wizard-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.wizard-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-step {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  padding: 14px;
+  color: #334155;
+  background: #ffffff;
+  text-align: left;
+  box-shadow: 0 10px 30px rgb(15 23 42 / 6%);
+}
+
+.wizard-step span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: 8px;
+  color: #1d4ed8;
+  background: #eaf1ff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.wizard-step strong {
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.wizard-step small {
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.wizard-step:hover,
+.wizard-step.active {
+  border-color: #9bb8e8;
+  background: #f8fbff;
+}
+
+.wizard-card {
+  display: grid;
+  gap: 24px;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  padding: 28px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgb(15 23 42 / 6%);
+}
+
+.wizard-step-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.wizard-kicker {
+  justify-self: start;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #1d4ed8;
+  background: #eaf1ff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.wizard-step-panel h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+}
+
+.wizard-step-panel p {
+  max-width: 680px;
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.wizard-field {
+  display: grid;
+  gap: 8px;
+  max-width: 440px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.wizard-field input {
+  width: 100%;
+  border: 1px solid #cad5e3;
+  border-radius: 8px;
+  padding: 12px 13px;
+  color: #0f172a;
+  background: #ffffff;
+  font-size: 15px;
+}
+
+.wizard-field input:focus {
+  border-color: #2563eb;
+  outline: 3px solid rgb(37 99 235 / 14%);
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #dbe4f0;
+  padding-top: 20px;
+}
+
+.wizard-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 920px) {
+  .wizard-layout {
+    grid-template-columns: 1fr;
+  }
+}

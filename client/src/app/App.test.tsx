@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { useCreationWizardStore } from '../features/creation-wizard/wizardStore'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useWorkspaceStore } from '../stores/useWorkspaceStore'
 import { App } from './App'
@@ -47,6 +48,7 @@ beforeEach(() => {
     selectedRulesetId: null,
   })
   useAuthStore.setState({ session: null })
+  useCreationWizardStore.setState({ currentStepId: 'basic-info', draftName: '' })
   rulesetsStatus = 200
   rulesetsResponse = demoRulesets
   charactersStatus = 200
@@ -156,6 +158,44 @@ test('renders the empty character list state', async () => {
 
   expect(await screen.findByText(/пока нет персонажей/i)).toBeInTheDocument()
   expect(screen.getAllByRole('link', { name: /создать черновик/i }).length).toBeGreaterThan(0)
+})
+
+test('opens the creation wizard from the character list', async () => {
+  const user = userEvent.setup()
+  useAuthStore.setState({ session: demoSession })
+  window.history.pushState({}, '', '/characters')
+
+  render(<App />)
+
+  await user.click(await screen.findByRole('link', { name: /создать черновик/i }))
+
+  expect(await screen.findByRole('heading', { name: /создание персонажа/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /далее/i })).toBeInTheDocument()
+})
+
+test('keeps local wizard state between steps', async () => {
+  const user = userEvent.setup()
+  useAuthStore.setState({ session: demoSession })
+  window.history.pushState({}, '', '/characters/new')
+
+  render(<App />)
+
+  await user.type(await screen.findByLabelText(/имя персонажа/i), 'Мира Вейл')
+  await user.click(screen.getByRole('button', { name: /далее/i }))
+  expect(await screen.findByRole('heading', { name: /происхождение/i })).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: /назад/i }))
+
+  expect(await screen.findByLabelText(/имя персонажа/i)).toHaveValue('Мира Вейл')
+})
+
+test('asks anonymous users to sign in before using the creation wizard', async () => {
+  window.history.pushState({}, '', '/characters/new')
+
+  render(<App />)
+
+  expect(await screen.findByText(/войдите, чтобы создать персонажа/i)).toBeInTheDocument()
+  expect(screen.getAllByRole('link', { name: /^войти$/i }).length).toBeGreaterThan(0)
 })
 
 test('renders the ruleset error state', async () => {
