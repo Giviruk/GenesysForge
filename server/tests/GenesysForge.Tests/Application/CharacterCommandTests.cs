@@ -3,12 +3,14 @@ using GenesysForge.Application.Characters.CreateCharacterDraft;
 using GenesysForge.Application.Characters.GetCharacterById;
 using GenesysForge.Application.Characters.ListMyCharacters;
 using GenesysForge.Application.Rules;
+using GenesysForge.Domain.Characters;
 using GenesysForge.Domain.Users;
 using GenesysForge.Infrastructure.Auth;
 using GenesysForge.Infrastructure.Characters;
 using GenesysForge.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Nodes;
 
 namespace GenesysForge.Tests.Application;
 
@@ -119,6 +121,71 @@ public sealed class CharacterCommandTests
         Assert.DoesNotContain("\"changed\":true", snapshotAfter);
         Assert.NotNull(loadedAfterDefinitionChange.RuleSnapshot);
         Assert.Equal(25, loadedAfterDefinitionChange.RuleSnapshot.RuleDefinitionIds.Count);
+    }
+
+    [Fact]
+    public async Task GetByIdCalculatesStatsFromRuleSnapshotDefinitions()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var getHandler = new GetCharacterByIdQueryHandler(fixture.CharactersRepository);
+        var guardianArchetypeId = await fixture.DbContext.RuleEntities
+            .Where(entity => entity.Key == "guardian")
+            .Select(entity => entity.Id)
+            .SingleAsync();
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(
+                fixture.OwnerUserId,
+                fixture.RulesetId,
+                "Mira Vale",
+                guardianArchetypeId),
+            CancellationToken.None);
+        var snapshot = await fixture.DbContext.CharacterSnapshots
+            .Where(snapshot => snapshot.CharacterId == created.Id)
+            .SingleAsync();
+        var content = JsonNode.Parse(snapshot.ContentJson)!;
+        content["draftProfile"]!["characteristics"]!["brawn"] = 1;
+        content["draftProfile"]!["derivedStats"]!["woundThreshold"] = 99;
+        var changedSnapshotJson = content.ToJsonString();
+        await fixture.DbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            UPDATE "CharacterSnapshots"
+            SET "ContentJson" = {changedSnapshotJson}
+            WHERE "Id" = {snapshot.Id}
+            """);
+
+        var loaded = await getHandler.Handle(
+            new GetCharacterByIdQuery(fixture.OwnerUserId, created.Id),
+            CancellationToken.None);
+
+        Assert.NotNull(loaded.CalculatedStats);
+        Assert.Equal(3, loaded.CalculatedStats.Characteristics["brawn"]);
+        Assert.Equal(13, loaded.CalculatedStats.DerivedStats["woundThreshold"]);
+    }
+
+    [Fact]
+    public async Task GetByIdCalculatesXpTotalsFromLedger()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var getHandler = new GetCharacterByIdQueryHandler(fixture.CharactersRepository);
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            CancellationToken.None);
+        fixture.DbContext.XpLedgerEntries.AddRange(
+            XpLedgerEntry.Create(created.Id, 100, "Initial XP"),
+            XpLedgerEntry.Create(created.Id, -35, "Skill purchases"));
+        await fixture.DbContext.SaveChangesAsync();
+
+        var loaded = await getHandler.Handle(
+            new GetCharacterByIdQuery(fixture.OwnerUserId, created.Id),
+            CancellationToken.None);
+
+        Assert.NotNull(loaded.CalculatedStats);
+        Assert.Equal(65, loaded.CalculatedStats.AvailableXp);
+        Assert.Equal(35, loaded.CalculatedStats.SpentXp);
     }
 
     [Fact]

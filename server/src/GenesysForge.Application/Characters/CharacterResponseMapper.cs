@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GenesysForge.Application.Characters.Calculations;
 using GenesysForge.Application.Characters.RuleSnapshots;
 using GenesysForge.Contracts.Characters;
 using GenesysForge.Contracts.Rules;
@@ -22,13 +23,7 @@ internal static class CharacterResponseMapper
         var snapshotContent = GetLatestSnapshotContent(character);
         var draftProfileSnapshot = snapshotContent?.DraftProfile ?? GetLegacyDraftProfile(character);
         var ruleSnapshot = snapshotContent?.RuleSnapshot;
-        var calculatedStats = draftProfileSnapshot is null
-            ? null
-            : new CalculatedCharacterStatsDto(
-                character.AvailableXp,
-                character.SpentXp,
-                draftProfileSnapshot.Characteristics,
-                draftProfileSnapshot.DerivedStats);
+        var calculatedStats = CharacterCalculationService.Calculate(character, snapshotContent, draftProfileSnapshot);
 
         return new CharacterDetailResponse(
             summary.Id,
