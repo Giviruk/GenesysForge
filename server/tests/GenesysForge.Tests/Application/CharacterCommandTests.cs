@@ -54,13 +54,71 @@ public sealed class CharacterCommandTests
         Assert.Equal("Mira Vale", loaded.Name);
         Assert.Equal(fixture.RulesetId, loaded.RulesetId);
         Assert.NotNull(loaded.DraftProfile);
+        Assert.NotNull(loaded.RuleSnapshot);
         Assert.NotNull(loaded.CalculatedStats);
+        Assert.Single(loaded.RuleSnapshot.SourceVersionIds);
+        Assert.Equal(25, loaded.RuleSnapshot.RuleEntityIds.Count);
+        Assert.Equal(25, loaded.RuleSnapshot.RuleDefinitionIds.Count);
         Assert.Equal(20, loaded.Skills.Count);
         Assert.Contains(loaded.Skills, skill => skill.IsCareerSkill);
         Assert.Contains(loaded.Skills, skill => !skill.IsCareerSkill);
         Assert.Equal(3, loaded.CalculatedStats.Characteristics["brawn"]);
         Assert.Equal(13, loaded.CalculatedStats.DerivedStats["woundThreshold"]);
         Assert.Empty(otherUserCharacters);
+    }
+
+    [Fact]
+    public async Task CreateDraftSnapshotsRuleDefinitionsIndependentlyFromCurrentSeedData()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var getHandler = new GetCharacterByIdQueryHandler(fixture.CharactersRepository);
+        var guardianArchetypeId = await fixture.DbContext.RuleEntities
+            .Where(entity => entity.Key == "guardian")
+            .Select(entity => entity.Id)
+            .SingleAsync();
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(
+                fixture.OwnerUserId,
+                fixture.RulesetId,
+                "Mira Vale",
+                guardianArchetypeId),
+            CancellationToken.None);
+        var snapshotBefore = await fixture.DbContext.CharacterSnapshots
+            .AsNoTracking()
+            .Where(snapshot => snapshot.CharacterId == created.Id)
+            .Select(snapshot => snapshot.ContentJson)
+            .SingleAsync();
+
+        var changedDefinitionJson = """{"changed":true}""";
+        await fixture.DbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            UPDATE "RuleDefinitions"
+            SET "ContentJson" = {changedDefinitionJson}
+            WHERE "RuleEntityId" = {guardianArchetypeId}
+            """);
+
+        var currentDefinition = await fixture.DbContext.RuleDefinitions
+            .AsNoTracking()
+            .Where(definition => definition.RuleEntityId == guardianArchetypeId)
+            .Select(definition => definition.ContentJson)
+            .SingleAsync();
+        var loadedAfterDefinitionChange = await getHandler.Handle(
+            new GetCharacterByIdQuery(fixture.OwnerUserId, created.Id),
+            CancellationToken.None);
+        var snapshotAfter = await fixture.DbContext.CharacterSnapshots
+            .AsNoTracking()
+            .Where(snapshot => snapshot.CharacterId == created.Id)
+            .Select(snapshot => snapshot.ContentJson)
+            .SingleAsync();
+
+        Assert.Equal("{\"changed\":true}", currentDefinition);
+        Assert.Equal(snapshotBefore, snapshotAfter);
+        Assert.Contains("\"woundThreshold\":13", snapshotAfter);
+        Assert.DoesNotContain("\"changed\":true", snapshotAfter);
+        Assert.NotNull(loadedAfterDefinitionChange.RuleSnapshot);
+        Assert.Equal(25, loadedAfterDefinitionChange.RuleSnapshot.RuleDefinitionIds.Count);
     }
 
     [Fact]

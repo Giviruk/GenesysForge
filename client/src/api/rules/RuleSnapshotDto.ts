@@ -5,4 +5,5 @@ export type RuleSnapshotDto = {
   createdAt: string
   sourceVersionIds: ApiId[]
   ruleEntityIds: ApiId[]
+  ruleDefinitionIds: ApiId[]
 }

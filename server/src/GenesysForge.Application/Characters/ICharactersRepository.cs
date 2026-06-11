@@ -1,3 +1,4 @@
+using GenesysForge.Application.Characters.RuleSnapshots;
 using GenesysForge.Domain.Characters;
 using GenesysForge.Domain.Rules;
 
@@ -26,6 +27,10 @@ public interface ICharactersRepository
     Task<IReadOnlyDictionary<Guid, string>> GetRuleDefinitionContentByEntityIdsAsync(
         IReadOnlyCollection<Guid> ruleEntityIds,
         string definitionKey,
+        CancellationToken cancellationToken);
+
+    Task<RuleSnapshotSource> GetRuleSnapshotSourceAsync(
+        Guid rulesetId,
         CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);

@@ -4,4 +4,5 @@ public sealed record RuleSnapshotDto(
     Guid RulesetId,
     DateTimeOffset CreatedAt,
     IReadOnlyCollection<Guid> SourceVersionIds,
-    IReadOnlyCollection<Guid> RuleEntityIds);
+    IReadOnlyCollection<Guid> RuleEntityIds,
+    IReadOnlyCollection<Guid> RuleDefinitionIds);

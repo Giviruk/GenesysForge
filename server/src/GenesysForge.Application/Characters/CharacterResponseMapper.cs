@@ -1,4 +1,5 @@
 using System.Text.Json;
+using GenesysForge.Application.Characters.RuleSnapshots;
 using GenesysForge.Contracts.Characters;
 using GenesysForge.Contracts.Rules;
 using Mapster;
@@ -18,7 +19,9 @@ internal static class CharacterResponseMapper
     public static CharacterDetailResponse ToDetailResponse(DomainCharacter character)
     {
         var summary = character.Adapt<CharacterSummaryResponse>(Config);
-        var draftProfileSnapshot = GetLatestDraftProfile(character);
+        var snapshotContent = GetLatestSnapshotContent(character);
+        var draftProfileSnapshot = snapshotContent?.DraftProfile ?? GetLegacyDraftProfile(character);
+        var ruleSnapshot = snapshotContent?.RuleSnapshot;
         var calculatedStats = draftProfileSnapshot is null
             ? null
             : new CalculatedCharacterStatsDto(
@@ -33,7 +36,14 @@ internal static class CharacterResponseMapper
             summary.Status,
             summary.RulesetId,
             summary.UpdatedAt,
-            null,
+            ruleSnapshot is null
+                ? null
+                : new RuleSnapshotDto(
+                    ruleSnapshot.RulesetId,
+                    ruleSnapshot.CreatedAt,
+                    ruleSnapshot.SourceVersions.Select(sourceVersion => sourceVersion.Id).ToArray(),
+                    ruleSnapshot.RuleEntities.Select(entity => entity.Id).ToArray(),
+                    ruleSnapshot.RuleDefinitions.Select(definition => definition.Id).ToArray()),
             calculatedStats,
             draftProfileSnapshot is null
                 ? null
@@ -69,11 +79,30 @@ internal static class CharacterResponseMapper
         return config;
     }
 
-    private static DraftProfileSnapshot? GetLatestDraftProfile(DomainCharacter character)
+    private static CharacterSnapshotContent? GetLatestSnapshotContent(DomainCharacter character)
     {
-        var snapshot = character.Snapshots
-            .OrderByDescending(snapshot => snapshot.CreatedAt)
-            .FirstOrDefault();
+        var snapshot = GetLatestSnapshot(character);
+
+        if (snapshot is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<CharacterSnapshotContent>(
+                snapshot.ContentJson,
+                RuleSnapshotService.JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static DraftProfileSnapshot? GetLegacyDraftProfile(DomainCharacter character)
+    {
+        var snapshot = GetLatestSnapshot(character);
 
         if (snapshot is null)
         {
@@ -90,12 +119,12 @@ internal static class CharacterResponseMapper
         }
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static GenesysForge.Domain.Characters.CharacterSnapshot? GetLatestSnapshot(DomainCharacter character)
+    {
+        return character.Snapshots
+            .OrderByDescending(snapshot => snapshot.CreatedAt)
+            .FirstOrDefault();
+    }
 
-    private sealed record DraftProfileSnapshot(
-        Guid? ArchetypeId,
-        Guid? CareerId,
-        int CareerSkillRanksToAssign,
-        IReadOnlyDictionary<string, int> Characteristics,
-        IReadOnlyDictionary<string, int> DerivedStats);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 }
