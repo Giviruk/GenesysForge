@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
+import { useAuthStore } from '../stores/useAuthStore'
 import { useWorkspaceStore } from '../stores/useWorkspaceStore'
 import { App } from './App'
 
@@ -13,9 +14,29 @@ const demoRulesets = [
     description: 'Открытый демо-набор для проверки rules-driven данных.',
   },
 ]
+const demoSession = {
+  accessToken: 'test-token',
+  expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+  user: {
+    id: '20000000-0000-0000-0000-000000000001',
+    email: 'player@example.com',
+    displayName: 'Игрок',
+  },
+}
+const demoCharacters = [
+  {
+    id: '30000000-0000-0000-0000-000000000001',
+    name: 'Мира Вейл',
+    status: 'Draft',
+    rulesetId: demoRulesetId,
+    updatedAt: '2026-06-11T08:00:00Z',
+  },
+]
 
 let rulesetsStatus = 200
 let rulesetsResponse = demoRulesets
+let charactersStatus = 200
+let charactersResponse = demoCharacters
 
 beforeEach(() => {
   sessionStorage.clear()
@@ -25,8 +46,11 @@ beforeEach(() => {
     lastDraftName: '',
     selectedRulesetId: null,
   })
+  useAuthStore.setState({ session: null })
   rulesetsStatus = 200
   rulesetsResponse = demoRulesets
+  charactersStatus = 200
+  charactersResponse = demoCharacters
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
@@ -75,6 +99,10 @@ beforeEach(() => {
         })
       }
 
+      if (url.endsWith('/api/characters')) {
+        return Response.json(charactersResponse, { status: charactersStatus })
+      }
+
       return Response.json({ title: 'Not found' }, { status: 404 })
     }),
   )
@@ -105,6 +133,29 @@ test('renders the empty ruleset state', async () => {
   render(<App />)
 
   expect(await screen.findByText(/пока нет доступных наборов правил/i)).toBeInTheDocument()
+})
+
+test('renders the character list for the signed in user', async () => {
+  useAuthStore.setState({ session: demoSession })
+  window.history.pushState({}, '', '/characters')
+
+  render(<App />)
+
+  expect(await screen.findByRole('heading', { name: /персонажи/i })).toBeInTheDocument()
+  expect(await screen.findByText('Мира Вейл')).toBeInTheDocument()
+  expect(screen.getByText('Черновик')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /создать черновик/i })).toBeInTheDocument()
+})
+
+test('renders the empty character list state', async () => {
+  useAuthStore.setState({ session: demoSession })
+  charactersResponse = []
+  window.history.pushState({}, '', '/characters')
+
+  render(<App />)
+
+  expect(await screen.findByText(/пока нет персонажей/i)).toBeInTheDocument()
+  expect(screen.getAllByRole('link', { name: /создать черновик/i }).length).toBeGreaterThan(0)
 })
 
 test('renders the ruleset error state', async () => {
