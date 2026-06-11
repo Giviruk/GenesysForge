@@ -4,8 +4,10 @@ using GenesysForge.Application.Characters;
 using GenesysForge.Application.Characters.CreateCharacterDraft;
 using GenesysForge.Application.Characters.GetCharacterById;
 using GenesysForge.Application.Characters.ListMyCharacters;
+using GenesysForge.Application.Characters.ValidateCharacter;
 using GenesysForge.Application.Rules;
 using GenesysForge.Contracts.Characters;
+using GenesysForge.Contracts.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -81,6 +83,38 @@ public sealed class CharactersController(ISender sender) : ControllerBase
         var response = await sender.Send(new ListMyCharactersQuery(ownerUserId), cancellationToken);
 
         return Ok(response);
+    }
+
+    [HttpGet("{characterId:guid}/validation")]
+    [ProducesResponseType<ValidationResultResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ValidationResultResponse>> Validate(
+        Guid characterId,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var ownerUserId))
+        {
+            return Unauthorized(CreateUnauthorizedProblemDetails());
+        }
+
+        try
+        {
+            var response = await sender.Send(
+                new ValidateCharacterQuery(ownerUserId, characterId),
+                cancellationToken);
+
+            return Ok(response);
+        }
+        catch (CharacterNotFoundException exception)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Персонаж не найден.",
+                Detail = exception.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
     }
 
     [HttpGet("{characterId:guid}")]

@@ -2,6 +2,7 @@ using GenesysForge.Application.Characters;
 using GenesysForge.Application.Characters.CreateCharacterDraft;
 using GenesysForge.Application.Characters.GetCharacterById;
 using GenesysForge.Application.Characters.ListMyCharacters;
+using GenesysForge.Application.Characters.ValidateCharacter;
 using GenesysForge.Application.Rules;
 using GenesysForge.Domain.Characters;
 using GenesysForge.Domain.Users;
@@ -11,6 +12,7 @@ using GenesysForge.Infrastructure.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Nodes;
+using GenesysForge.Contracts.Validation;
 
 namespace GenesysForge.Tests.Application;
 
@@ -186,6 +188,48 @@ public sealed class CharacterCommandTests
         Assert.NotNull(loaded.CalculatedStats);
         Assert.Equal(65, loaded.CalculatedStats.AvailableXp);
         Assert.Equal(35, loaded.CalculatedStats.SpentXp);
+    }
+
+    [Fact]
+    public async Task ValidateCharacterReturnsWarningForUnassignedCareerSkillRanks()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var validateHandler = new ValidateCharacterQueryHandler(fixture.CharactersRepository);
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            CancellationToken.None);
+
+        var result = await validateHandler.Handle(
+            new ValidateCharacterQuery(fixture.OwnerUserId, created.Id),
+            CancellationToken.None);
+
+        Assert.True(result.IsValid);
+        var message = Assert.Single(result.Messages);
+        Assert.Equal("character.career.starting_ranks.unassigned", message.Code);
+        Assert.Equal(ValidationSeverity.Warning, message.Severity);
+        Assert.Equal("skills", message.Path);
+    }
+
+    [Fact]
+    public async Task ValidateCharacterRejectsMissingRuleSnapshot()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var validateHandler = new ValidateCharacterQueryHandler(fixture.CharactersRepository);
+        var character = Character.CreateDraft(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale");
+        await fixture.CharactersRepository.AddAsync(character, CancellationToken.None);
+        await fixture.CharactersRepository.SaveChangesAsync(CancellationToken.None);
+
+        var result = await validateHandler.Handle(
+            new ValidateCharacterQuery(fixture.OwnerUserId, character.Id),
+            CancellationToken.None);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(
+            result.Messages,
+            message => message.Code == "character.snapshot.required" &&
+                message.Severity == ValidationSeverity.Error);
     }
 
     [Fact]
