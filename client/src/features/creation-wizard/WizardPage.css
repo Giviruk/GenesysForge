@@ -204,6 +204,10 @@
   border-bottom: 0;
 }
 
+.sheet-field-error {
+  margin: -4px 16px 10px 206px;
+}
+
 .sheet-field-row > span {
   color: #172033;
   font-size: 13px;
@@ -503,6 +507,10 @@
   .critical-row,
   .skill-row {
     grid-template-columns: 1fr;
+  }
+
+  .sheet-field-error {
+    margin: -4px 16px 10px;
   }
 
   .critical-row strong {
