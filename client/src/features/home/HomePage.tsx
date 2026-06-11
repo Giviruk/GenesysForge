@@ -68,14 +68,20 @@ export function HomePage() {
 
         <nav className="sidebar-nav">
           {navigation.map((item) => (
-            <button
-              key={item.id}
-              className={activeSection === item.id ? 'nav-item active' : 'nav-item'}
-              type="button"
-              onClick={() => setActiveSection(item.id)}
-            >
-              {item.label}
-            </button>
+            item.id === 'characters' ? (
+              <NavLink key={item.id} to="/characters" className="nav-item">
+                {item.label}
+              </NavLink>
+            ) : (
+              <button
+                key={item.id}
+                className={activeSection === item.id ? 'nav-item active' : 'nav-item'}
+                type="button"
+                onClick={() => setActiveSection(item.id)}
+              >
+                {item.label}
+              </button>
+            )
           ))}
         </nav>
       </aside>

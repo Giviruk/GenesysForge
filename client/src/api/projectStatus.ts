@@ -18,7 +18,7 @@ const projectStatus: ProjectStatus[] = [
   },
 ]
 
-export async function getProjectStatus() {
+export async function getProjectStatus(): Promise<ProjectStatus[]> {
   await new Promise((resolve) => window.setTimeout(resolve, 120))
 
   return projectStatus
