@@ -48,7 +48,12 @@ beforeEach(() => {
     selectedRulesetId: null,
   })
   useAuthStore.setState({ session: null })
-  useCreationWizardStore.setState({ currentStepId: 'basic-info', draftName: '' })
+  useCreationWizardStore.setState({
+    currentStepId: 'basic-info',
+    draftName: '',
+    selectedArchetypeId: null,
+    selectedCareerId: null,
+  })
   rulesetsStatus = 200
   rulesetsResponse = demoRulesets
   charactersStatus = 200

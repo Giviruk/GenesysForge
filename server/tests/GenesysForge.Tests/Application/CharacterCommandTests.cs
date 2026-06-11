@@ -21,9 +21,22 @@ public sealed class CharacterCommandTests
         var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
         var listHandler = new ListMyCharactersQueryHandler(fixture.CharactersRepository);
         var getHandler = new GetCharacterByIdQueryHandler(fixture.CharactersRepository);
+        var guardianArchetypeId = await fixture.DbContext.RuleEntities
+            .Where(entity => entity.Key == "guardian")
+            .Select(entity => entity.Id)
+            .SingleAsync();
+        var warriorCareerId = await fixture.DbContext.RuleEntities
+            .Where(entity => entity.Key == "warrior")
+            .Select(entity => entity.Id)
+            .SingleAsync();
 
         var created = await createHandler.Handle(
-            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            new CreateCharacterDraftCommand(
+                fixture.OwnerUserId,
+                fixture.RulesetId,
+                "Mira Vale",
+                guardianArchetypeId,
+                warriorCareerId),
             CancellationToken.None);
 
         var ownerCharacters = await listHandler.Handle(
@@ -40,6 +53,13 @@ public sealed class CharacterCommandTests
         Assert.Equal(created.Id, ownerCharacter.Id);
         Assert.Equal("Mira Vale", loaded.Name);
         Assert.Equal(fixture.RulesetId, loaded.RulesetId);
+        Assert.NotNull(loaded.DraftProfile);
+        Assert.NotNull(loaded.CalculatedStats);
+        Assert.Equal(20, loaded.Skills.Count);
+        Assert.Contains(loaded.Skills, skill => skill.IsCareerSkill);
+        Assert.Contains(loaded.Skills, skill => !skill.IsCareerSkill);
+        Assert.Equal(3, loaded.CalculatedStats.Characteristics["brawn"]);
+        Assert.Equal(13, loaded.CalculatedStats.DerivedStats["woundThreshold"]);
         Assert.Empty(otherUserCharacters);
     }
 

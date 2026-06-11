@@ -1,3 +1,4 @@
+import type { RuleDefinitionDto } from './RuleDefinitionDto'
 import type { RuleEntityDto } from './RuleEntityDto'
 import type { RulesetDto } from './RulesetDto'
 import type { RuleSourceVersionDto } from './RuleSourceVersionDto'
@@ -8,4 +9,5 @@ export type RuleCatalogResponse = {
   sourceBooks: SourceBookDto[]
   sourceVersions: RuleSourceVersionDto[]
   entities: RuleEntityDto[]
+  definitions: RuleDefinitionDto[]
 }

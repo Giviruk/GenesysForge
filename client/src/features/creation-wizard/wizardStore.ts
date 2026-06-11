@@ -28,15 +28,29 @@ export type WizardStepId = (typeof wizardSteps)[number]['id']
 type CreationWizardState = {
   currentStepId: WizardStepId
   draftName: string
+  selectedArchetypeId: string | null
+  selectedCareerId: string | null
   reset: () => void
   setCurrentStep: (stepId: WizardStepId) => void
   setDraftName: (name: string) => void
+  setSelectedArchetypeId: (archetypeId: string) => void
+  setSelectedCareerId: (careerId: string) => void
 }
 
 export const useCreationWizardStore = create<CreationWizardState>((set) => ({
   currentStepId: 'basic-info',
   draftName: '',
-  reset: () => set({ currentStepId: 'basic-info', draftName: '' }),
+  selectedArchetypeId: null,
+  selectedCareerId: null,
+  reset: () =>
+    set({
+      currentStepId: 'basic-info',
+      draftName: '',
+      selectedArchetypeId: null,
+      selectedCareerId: null,
+    }),
   setCurrentStep: (stepId) => set({ currentStepId: stepId }),
   setDraftName: (name) => set({ draftName: name }),
+  setSelectedArchetypeId: (archetypeId) => set({ selectedArchetypeId: archetypeId }),
+  setSelectedCareerId: (careerId) => set({ selectedCareerId: careerId }),
 }))

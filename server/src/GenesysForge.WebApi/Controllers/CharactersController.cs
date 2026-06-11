@@ -34,7 +34,12 @@ public sealed class CharactersController(ISender sender) : ControllerBase
         try
         {
             var response = await sender.Send(
-                new CreateCharacterDraftCommand(ownerUserId, request.RulesetId, request.Name),
+                new CreateCharacterDraftCommand(
+                    ownerUserId,
+                    request.RulesetId,
+                    request.Name,
+                    request.ArchetypeId,
+                    request.CareerId),
                 cancellationToken);
 
             return CreatedAtAction(nameof(GetById), new { characterId = response.Id }, response);
@@ -48,6 +53,15 @@ public sealed class CharactersController(ISender sender) : ControllerBase
             return NotFound(new ProblemDetails
             {
                 Title = "Набор правил не найден.",
+                Detail = exception.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (RuleEntityNotFoundException exception)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Элемент правил не найден.",
                 Detail = exception.Message,
                 Status = StatusCodes.Status404NotFound
             });

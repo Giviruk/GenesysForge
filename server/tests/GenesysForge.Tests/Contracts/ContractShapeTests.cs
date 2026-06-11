@@ -31,6 +31,7 @@ public sealed class ContractShapeTests
             [new RulesetDto(draft.RulesetId, "Genesys Demo", "1.0", null)],
             [],
             [],
+            [],
             []);
 
         var validation = new ValidationResultResponse(

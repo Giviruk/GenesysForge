@@ -9,4 +9,6 @@ public sealed record CharacterDetailResponse(
     Guid RulesetId,
     DateTimeOffset UpdatedAt,
     RuleSnapshotDto? RuleSnapshot,
-    CalculatedCharacterStatsDto? CalculatedStats);
+    CalculatedCharacterStatsDto? CalculatedStats,
+    CharacterDraftProfileResponse? DraftProfile,
+    IReadOnlyCollection<CharacterSkillResponse> Skills);

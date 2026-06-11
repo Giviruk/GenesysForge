@@ -212,6 +212,7 @@
 }
 
 .sheet-field-row input,
+.sheet-field-row select,
 .sheet-select-row,
 .sheet-static-value {
   width: 100%;
@@ -224,6 +225,7 @@
 }
 
 .sheet-field-row input:focus,
+.sheet-field-row select:focus,
 .sheet-select-row:focus {
   border-color: #2563eb;
   outline: 3px solid rgb(37 99 235 / 14%);
