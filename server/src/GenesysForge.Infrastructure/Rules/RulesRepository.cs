@@ -61,12 +61,27 @@ public sealed class RulesRepository(AppDbContext dbContext) : IRulesRepository
                 entity.Name,
                 entity.Description))
             .ToListAsync(cancellationToken);
+        var entityIds = entities.Select(entity => entity.Id).ToArray();
+
+        var definitions = await dbContext.RuleDefinitions
+            .AsNoTracking()
+            .Where(definition => entityIds.Contains(definition.RuleEntityId))
+            .OrderBy(definition => definition.Key)
+            .ThenBy(definition => definition.Id)
+            .Select(definition => new RuleDefinitionDto(
+                definition.Id,
+                definition.RuleEntityId,
+                definition.SourceVersionId,
+                definition.Key,
+                definition.ContentJson))
+            .ToListAsync(cancellationToken);
 
         return new RuleCatalogResponse(
             [ruleset],
             sourceBooks,
             sourceVersions,
-            entities);
+            entities,
+            definitions);
     }
 
     public async Task<IReadOnlyCollection<RulesetDto>> ListRulesetsAsync(CancellationToken cancellationToken)

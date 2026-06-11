@@ -39,10 +39,15 @@ public sealed class RulesQueryTests
         Assert.Single(catalog.Rulesets);
         Assert.Single(catalog.SourceBooks);
         Assert.Single(catalog.SourceVersions);
-        Assert.Equal(5, catalog.Entities.Count);
+        Assert.Equal(25, catalog.Entities.Count);
+        Assert.Equal(25, catalog.Definitions.Count);
         Assert.Contains(catalog.Entities, entity => entity.EntityType == "archetype" && entity.Key == "guardian");
+        Assert.Contains(catalog.Entities, entity => entity.EntityType == "career" && entity.Key == "warrior");
         Assert.Contains(catalog.Entities, entity => entity.EntityType == "skill" && entity.Key == "resolve");
+        Assert.Contains(catalog.Entities, entity => entity.EntityType == "skill" && entity.Key == "education");
         Assert.Contains(catalog.Entities, entity => entity.EntityType == "talent" && entity.Key == "steady-stance");
+        Assert.Contains(catalog.Definitions, definition => definition.Key == "career-profile");
+        Assert.Contains(catalog.Definitions, definition => definition.Key == "skill-profile");
     }
 
     [Fact]
