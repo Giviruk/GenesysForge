@@ -478,6 +478,110 @@
   padding-top: 18px;
 }
 
+.validation-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #d8e2ef;
+  border-radius: 8px;
+  padding: 16px;
+  background: rgb(255 255 255 / 88%);
+}
+
+.validation-panel-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.validation-panel-header span {
+  color: #155e9f;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.validation-panel-header h2 {
+  margin: 2px 0 0;
+  color: #172033;
+  font-size: 19px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.validation-badge {
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.validation-badge.valid {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.validation-badge.invalid {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.validation-empty {
+  margin: 0;
+  color: #64748b;
+}
+
+.validation-message-group {
+  display: grid;
+  gap: 8px;
+  border-left: 4px solid;
+  border-radius: 7px;
+  padding: 12px;
+}
+
+.validation-message-group.error {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.validation-message-group.warning {
+  border-color: #d97706;
+  background: #fffbeb;
+}
+
+.validation-message-group h3,
+.validation-message-group ul {
+  margin: 0;
+}
+
+.validation-message-group h3 {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.validation-message-group ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 18px;
+}
+
+.validation-message-group li {
+  color: #334155;
+}
+
+.validation-message-group li strong {
+  display: block;
+  font-size: 14px;
+}
+
+.validation-message-group li span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 @media (max-width: 1100px) {
   .sheet-step-tabs,
   .sheet-derived-grid,
