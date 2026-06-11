@@ -21,7 +21,9 @@ public sealed class CharactersRepository(AppDbContext dbContext) : ICharactersRe
     {
         return dbContext.Characters
             .AsNoTracking()
+            .Include(character => character.XpLedgerEntries)
             .Include(character => character.Skills)
+            .Include(character => character.Talents)
             .Include(character => character.Snapshots)
             .Where(character => character.Id == characterId && character.OwnerUserId == ownerUserId)
             .SingleOrDefaultAsync(cancellationToken);
