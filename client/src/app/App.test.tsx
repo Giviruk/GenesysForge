@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { useCreationWizardStore } from '../features/creation-wizard/wizardStore'
@@ -102,7 +102,16 @@ beforeEach(() => {
               name: 'Страж',
               description: null,
             },
+            {
+              id: '10000000-0000-0000-0000-00000000000e',
+              rulesetId: demoRulesetId,
+              entityType: 'career',
+              key: 'warrior',
+              name: 'Воин',
+              description: null,
+            },
           ],
+          definitions: [],
         })
       }
 
@@ -130,7 +139,7 @@ test('renders the frontend starter screen', async () => {
   expect(await screen.findByRole('combobox', { name: /набор правил/i })).toHaveTextContent(
     /Демо-набор Genesys Forge v1\.0/i,
   )
-  expect(await screen.findByText(/элементов правил: 1/i)).toBeInTheDocument()
+  expect(await screen.findByText(/элементов правил: 2/i)).toBeInTheDocument()
   expect(screen.getByLabelText(/имя персонажа/i)).toBeInTheDocument()
 })
 
@@ -192,6 +201,20 @@ test('keeps local wizard state between steps', async () => {
   await user.click(screen.getByRole('button', { name: /назад/i }))
 
   expect(await screen.findByLabelText(/имя персонажа/i)).toHaveValue('Мира Вейл')
+})
+
+test('validates the wizard basic info form before creating a draft', async () => {
+  const user = userEvent.setup()
+  useAuthStore.setState({ session: demoSession })
+  window.history.pushState({}, '', '/characters/new')
+
+  render(<App />)
+
+  const createButton = await screen.findByRole('button', { name: /создать черновик/i })
+  await waitFor(() => expect(createButton).not.toBeDisabled())
+  await user.click(createButton)
+
+  expect(await screen.findByText(/укажите имя персонажа/i)).toBeInTheDocument()
 })
 
 test('asks anonymous users to sign in before using the creation wizard', async () => {

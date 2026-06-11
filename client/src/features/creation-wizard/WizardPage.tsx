@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
 import { createCharacterDraft } from '../../api/charactersApi'
 import type { CharacterSkillResponse } from '../../api/characters/CharacterSkillResponse'
@@ -63,6 +64,13 @@ type SkillViewModel = {
   rank: number
 }
 
+type BasicInfoFormValues = {
+  name: string
+  rulesetId: string
+  archetypeId: string
+  careerId: string
+}
+
 export function WizardPage() {
   const session = useAuthStore((state) => state.session)
   const clearSession = useAuthStore((state) => state.clearSession)
@@ -79,7 +87,27 @@ export function WizardPage() {
   const resetWizard = useCreationWizardStore((state) => state.reset)
 
   const rulesetsQuery = useRulesets()
-  const activeRulesetId = selectedRulesetId ?? rulesetsQuery.data?.[0]?.id ?? ''
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset: resetBasicInfo,
+    control,
+    formState: { errors },
+  } = useForm<BasicInfoFormValues>({
+    defaultValues: {
+      name: draftName,
+      rulesetId: selectedRulesetId ?? '',
+      archetypeId: selectedArchetypeId ?? '',
+      careerId: selectedCareerId ?? '',
+    },
+  })
+
+  const watchedName = useWatch({ control, name: 'name' }) ?? ''
+  const watchedRulesetId = useWatch({ control, name: 'rulesetId' }) ?? ''
+  const watchedArchetypeId = useWatch({ control, name: 'archetypeId' }) ?? ''
+  const watchedCareerId = useWatch({ control, name: 'careerId' }) ?? ''
+  const activeRulesetId = watchedRulesetId || selectedRulesetId || rulesetsQuery.data?.[0]?.id || ''
   const catalogQuery = useRuleCatalog(activeRulesetId)
   const catalog = catalogQuery.data
 
@@ -101,15 +129,15 @@ export function WizardPage() {
   )
   const definitions = catalog?.definitions ?? []
 
-  const selectedArchetype = archetypes.find((entity) => entity.id === selectedArchetypeId) ?? archetypes[0]
-  const selectedCareer = careers.find((entity) => entity.id === selectedCareerId) ?? careers[0]
+  const selectedArchetype = archetypes.find((entity) => entity.id === watchedArchetypeId) ?? archetypes[0]
+  const selectedCareer = careers.find((entity) => entity.id === watchedCareerId) ?? careers[0]
   const createDraftMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: BasicInfoFormValues) =>
       createCharacterDraft(session?.accessToken ?? '', {
-        name: draftName.trim(),
-        rulesetId: activeRulesetId,
-        archetypeId: selectedArchetype?.id ?? null,
-        careerId: selectedCareer?.id ?? null,
+        name: values.name.trim(),
+        rulesetId: values.rulesetId,
+        archetypeId: values.archetypeId || null,
+        careerId: values.careerId || null,
       }),
   })
   const archetypeProfile = parseDefinition<ArchetypeProfile>(definitions, selectedArchetype?.id, 'starting-profile')
@@ -122,22 +150,25 @@ export function WizardPage() {
 
   useEffect(() => {
     const firstRuleset = rulesetsQuery.data?.[0]
-    if (!selectedRulesetId && firstRuleset) {
+    if (!watchedRulesetId && !selectedRulesetId && firstRuleset) {
+      setValue('rulesetId', firstRuleset.id)
       setSelectedRulesetId(firstRuleset.id)
     }
-  }, [rulesetsQuery.data, selectedRulesetId, setSelectedRulesetId])
+  }, [rulesetsQuery.data, selectedRulesetId, setSelectedRulesetId, setValue, watchedRulesetId])
 
   useEffect(() => {
-    if (!selectedArchetypeId && archetypes[0]) {
+    if (!watchedArchetypeId && !selectedArchetypeId && archetypes[0]) {
+      setValue('archetypeId', archetypes[0].id)
       setSelectedArchetypeId(archetypes[0].id)
     }
-  }, [archetypes, selectedArchetypeId, setSelectedArchetypeId])
+  }, [archetypes, selectedArchetypeId, setSelectedArchetypeId, setValue, watchedArchetypeId])
 
   useEffect(() => {
-    if (!selectedCareerId && careers[0]) {
+    if (!watchedCareerId && !selectedCareerId && careers[0]) {
+      setValue('careerId', careers[0].id)
       setSelectedCareerId(careers[0].id)
     }
-  }, [careers, selectedCareerId, setSelectedCareerId])
+  }, [careers, selectedCareerId, setSelectedCareerId, setValue, watchedCareerId])
 
   function goToPreviousStep() {
     if (!isFirstStep) {
@@ -155,27 +186,56 @@ export function WizardPage() {
     setSelectedRulesetId(nextRulesetId)
     setSelectedArchetypeId('')
     setSelectedCareerId('')
+    setValue('archetypeId', '')
+    setValue('careerId', '')
     createDraftMutation.reset()
   }
 
-  function handleCreateDraft() {
-    if (!canCreateDraft) {
+  function handleResetWizard() {
+    const nextRulesetId = rulesetsQuery.data?.[0]?.id ?? ''
+    const nextArchetypeId = archetypes[0]?.id ?? ''
+    const nextCareerId = careers[0]?.id ?? ''
+
+    resetWizard()
+    resetBasicInfo({
+      name: '',
+      rulesetId: nextRulesetId,
+      archetypeId: nextArchetypeId,
+      careerId: nextCareerId,
+    })
+
+    if (nextRulesetId) {
+      setSelectedRulesetId(nextRulesetId)
+    }
+
+    if (nextArchetypeId) {
+      setSelectedArchetypeId(nextArchetypeId)
+    }
+
+    if (nextCareerId) {
+      setSelectedCareerId(nextCareerId)
+    }
+
+    createDraftMutation.reset()
+  }
+
+  function handleCreateDraft(values: BasicInfoFormValues) {
+    if (!canSubmitBasicInfo) {
       return
     }
 
-    createDraftMutation.mutate()
+    createDraftMutation.mutate(values)
   }
 
-  const displayName = draftName.trim() || 'Новый персонаж'
+  const displayName = watchedName.trim() || 'Новый персонаж'
   const initials = displayName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('')
-  const canCreateDraft =
+  const canSubmitBasicInfo =
     Boolean(session) &&
-    draftName.trim().length >= 2 &&
     activeRulesetId.length > 0 &&
     Boolean(selectedArchetype) &&
     Boolean(selectedCareer) &&
@@ -237,7 +297,7 @@ export function WizardPage() {
                 карьерные навыки и данные, которые попадут в черновик.
               </p>
             </div>
-            <button className="text-button" type="button" onClick={resetWizard}>
+            <button className="text-button" type="button" onClick={handleResetWizard}>
               Сбросить
             </button>
           </header>
@@ -270,7 +330,7 @@ export function WizardPage() {
                 </ol>
               </div>
 
-              <section className="character-sheet" aria-live="polite">
+              <form className="character-sheet" aria-live="polite" onSubmit={handleSubmit(handleCreateDraft)}>
                 <div className="sheet-current-step">
                   <span>Активный раздел</span>
                   <h2>{currentStep.title}</h2>
@@ -287,7 +347,7 @@ export function WizardPage() {
                   <div className="sheet-panel sheet-main-panel">
                     <div className="sheet-title-row">
                       <h2 id="sheet-character-heading">Персонаж</h2>
-                      <button className="sheet-small-button" type="button" onClick={resetWizard}>
+                      <button className="sheet-small-button" type="button" onClick={handleResetWizard}>
                         Новый лист
                       </button>
                     </div>
@@ -295,18 +355,30 @@ export function WizardPage() {
                     <label className="sheet-field-row">
                       <span>Имя персонажа</span>
                       <input
-                        value={draftName}
+                        {...register('name', {
+                          required: 'Укажите имя персонажа',
+                          minLength: {
+                            value: 2,
+                            message: 'Введите минимум 2 символа',
+                          },
+                          onChange: (event) => {
+                            setDraftName(event.target.value)
+                            createDraftMutation.reset()
+                          },
+                        })}
                         placeholder="Например, Артур Лейвин"
-                        onChange={(event) => {
-                          setDraftName(event.target.value)
-                          createDraftMutation.reset()
-                        }}
                       />
                     </label>
+                    {errors.name ? <p className="form-error sheet-field-error">{errors.name.message}</p> : null}
 
                     <label className="sheet-field-row">
                       <span>Набор правил</span>
-                      <select value={activeRulesetId} onChange={(event) => handleRulesetChange(event.target.value)}>
+                      <select
+                        {...register('rulesetId', {
+                          required: 'Выберите набор правил',
+                          onChange: (event) => handleRulesetChange(event.target.value),
+                        })}
+                      >
                         {(rulesetsQuery.data ?? []).map((ruleset) => (
                           <option key={ruleset.id} value={ruleset.id}>
                             {ruleset.name} v{ruleset.version}
@@ -314,16 +386,19 @@ export function WizardPage() {
                         ))}
                       </select>
                     </label>
+                    {errors.rulesetId ? <p className="form-error sheet-field-error">{errors.rulesetId.message}</p> : null}
 
                     <label className="sheet-field-row">
                       <span>Архетип</span>
                       <select
-                        value={selectedArchetype?.id ?? ''}
-                        onChange={(event) => {
-                          setSelectedArchetypeId(event.target.value)
-                          setCurrentStep('origin')
-                          createDraftMutation.reset()
-                        }}
+                        {...register('archetypeId', {
+                          required: 'Выберите архетип',
+                          onChange: (event) => {
+                            setSelectedArchetypeId(event.target.value)
+                            setCurrentStep('origin')
+                            createDraftMutation.reset()
+                          },
+                        })}
                       >
                         {archetypes.map((archetype) => (
                           <option key={archetype.id} value={archetype.id}>
@@ -332,16 +407,19 @@ export function WizardPage() {
                         ))}
                       </select>
                     </label>
+                    {errors.archetypeId ? <p className="form-error sheet-field-error">{errors.archetypeId.message}</p> : null}
 
                     <label className="sheet-field-row">
                       <span>Карьера</span>
                       <select
-                        value={selectedCareer?.id ?? ''}
-                        onChange={(event) => {
-                          setSelectedCareerId(event.target.value)
-                          setCurrentStep('career')
-                          createDraftMutation.reset()
-                        }}
+                        {...register('careerId', {
+                          required: 'Выберите карьеру',
+                          onChange: (event) => {
+                            setSelectedCareerId(event.target.value)
+                            setCurrentStep('career')
+                            createDraftMutation.reset()
+                          },
+                        })}
                       >
                         {careers.map((career) => (
                           <option key={career.id} value={career.id}>
@@ -350,6 +428,7 @@ export function WizardPage() {
                         ))}
                       </select>
                     </label>
+                    {errors.careerId ? <p className="form-error sheet-field-error">{errors.careerId.message}</p> : null}
 
                     <div className="sheet-field-row">
                       <span>Карьерные ранги</span>
@@ -435,7 +514,7 @@ export function WizardPage() {
                   <button className="text-button" disabled={isFirstStep} type="button" onClick={goToPreviousStep}>
                     Назад
                   </button>
-                  <button className="submit-button" disabled={!canCreateDraft} type="button" onClick={handleCreateDraft}>
+                  <button className="submit-button" disabled={!canSubmitBasicInfo} type="submit">
                     {createDraftMutation.isPending ? 'Создаем...' : 'Создать черновик'}
                   </button>
                   <button className="submit-button" disabled={isLastStep} type="button" onClick={goToNextStep}>
@@ -451,7 +530,7 @@ export function WizardPage() {
                 {createDraftMutation.isError ? (
                   <p className="form-error">Не удалось создать черновик. Проверьте выбранные данные и попробуйте еще раз.</p>
                 ) : null}
-              </section>
+              </form>
             </div>
           )}
         </section>
