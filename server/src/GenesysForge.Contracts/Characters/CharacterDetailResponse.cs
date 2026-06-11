@@ -7,5 +7,6 @@ public sealed record CharacterDetailResponse(
     string Name,
     CharacterStatus Status,
     Guid RulesetId,
+    DateTimeOffset UpdatedAt,
     RuleSnapshotDto? RuleSnapshot,
     CalculatedCharacterStatsDto? CalculatedStats);
