@@ -1,0 +1,132 @@
+using GenesysForge.Application.Characters;
+using GenesysForge.Application.Characters.CreateCharacterDraft;
+using GenesysForge.Application.Characters.GetCharacterById;
+using GenesysForge.Application.Characters.ListMyCharacters;
+using GenesysForge.Application.Rules;
+using GenesysForge.Domain.Users;
+using GenesysForge.Infrastructure.Auth;
+using GenesysForge.Infrastructure.Characters;
+using GenesysForge.Infrastructure.Persistence;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+
+namespace GenesysForge.Tests.Application;
+
+public sealed class CharacterCommandTests
+{
+    [Fact]
+    public async Task CreateDraftStoresCharacterForCurrentOwner()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var listHandler = new ListMyCharactersQueryHandler(fixture.CharactersRepository);
+        var getHandler = new GetCharacterByIdQueryHandler(fixture.CharactersRepository);
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            CancellationToken.None);
+
+        var ownerCharacters = await listHandler.Handle(
+            new ListMyCharactersQuery(fixture.OwnerUserId),
+            CancellationToken.None);
+        var otherUserCharacters = await listHandler.Handle(
+            new ListMyCharactersQuery(fixture.OtherUserId),
+            CancellationToken.None);
+        var loaded = await getHandler.Handle(
+            new GetCharacterByIdQuery(fixture.OwnerUserId, created.Id),
+            CancellationToken.None);
+
+        var ownerCharacter = Assert.Single(ownerCharacters);
+        Assert.Equal(created.Id, ownerCharacter.Id);
+        Assert.Equal("Mira Vale", loaded.Name);
+        Assert.Equal(fixture.RulesetId, loaded.RulesetId);
+        Assert.Empty(otherUserCharacters);
+    }
+
+    [Fact]
+    public async Task GetByIdRejectsCharacterOwnedByAnotherUser()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var getHandler = new GetCharacterByIdQueryHandler(fixture.CharactersRepository);
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            CancellationToken.None);
+
+        await Assert.ThrowsAsync<CharacterNotFoundException>(() =>
+            getHandler.Handle(
+                new GetCharacterByIdQuery(fixture.OtherUserId, created.Id),
+                CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CreateDraftRejectsUnknownRuleset()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+
+        await Assert.ThrowsAsync<RulesetNotFoundException>(() =>
+            createHandler.Handle(
+                new CreateCharacterDraftCommand(fixture.OwnerUserId, Guid.NewGuid(), "Mira Vale"),
+                CancellationToken.None));
+    }
+
+    private sealed class CharacterTestFixture : IAsyncDisposable
+    {
+        private CharacterTestFixture(
+            SqliteConnection connection,
+            AppDbContext dbContext,
+            Guid ownerUserId,
+            Guid otherUserId,
+            Guid rulesetId)
+        {
+            Connection = connection;
+            DbContext = dbContext;
+            OwnerUserId = ownerUserId;
+            OtherUserId = otherUserId;
+            RulesetId = rulesetId;
+            CharactersRepository = new CharactersRepository(dbContext);
+        }
+
+        public SqliteConnection Connection { get; }
+
+        public AppDbContext DbContext { get; }
+
+        public CharactersRepository CharactersRepository { get; }
+
+        public Guid OwnerUserId { get; }
+
+        public Guid OtherUserId { get; }
+
+        public Guid RulesetId { get; }
+
+        public static async Task<CharacterTestFixture> CreateAsync()
+        {
+            var connection = new SqliteConnection("Data Source=:memory:");
+            await connection.OpenAsync();
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite(connection)
+                .Options;
+            var dbContext = new AppDbContext(options);
+            await dbContext.Database.EnsureCreatedAsync();
+
+            var passwordHash = new PasswordHashService().HashPassword("CorrectHorseBatteryStaple!42");
+            var owner = User.Create("owner@example.com", "Owner", passwordHash);
+            var otherUser = User.Create("other@example.com", "Other", passwordHash);
+            dbContext.Users.AddRange(owner, otherUser);
+            await dbContext.SaveChangesAsync();
+
+            var rulesetId = await dbContext.Rulesets
+                .Select(ruleset => ruleset.Id)
+                .SingleAsync();
+
+            return new CharacterTestFixture(connection, dbContext, owner.Id, otherUser.Id, rulesetId);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DbContext.DisposeAsync();
+            await Connection.DisposeAsync();
+        }
+    }
+}

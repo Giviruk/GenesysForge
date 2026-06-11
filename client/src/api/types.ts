@@ -1,4 +1,5 @@
 export * from './authApi'
+export * from './charactersApi'
 export * from './rulesApi'
 export * from './auth/AuthSessionResponse'
 export * from './auth/LoginRequest'
