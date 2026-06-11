@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
@@ -6,6 +6,8 @@ import { createCharacterDraft } from '../../api/charactersApi'
 import type { CharacterSkillResponse } from '../../api/characters/CharacterSkillResponse'
 import type { RuleDefinitionDto } from '../../api/rules/RuleDefinitionDto'
 import type { RuleEntityDto } from '../../api/rules/RuleEntityDto'
+import { validateCharacter } from '../../api/validationApi'
+import type { ValidationResultResponse } from '../../api/validation/ValidationResultResponse'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { useWorkspaceStore } from '../../stores/useWorkspaceStore'
 import { useRuleCatalog, useRulesets } from '../rules/useRulesets'
@@ -139,6 +141,12 @@ export function WizardPage() {
         archetypeId: values.archetypeId || null,
         careerId: values.careerId || null,
       }),
+  })
+  const createdCharacterId = createDraftMutation.data?.id
+  const validationQuery = useQuery({
+    enabled: Boolean(session?.accessToken && createdCharacterId),
+    queryKey: ['character-validation', createdCharacterId],
+    queryFn: () => validateCharacter(session?.accessToken ?? '', createdCharacterId ?? ''),
   })
   const archetypeProfile = parseDefinition<ArchetypeProfile>(definitions, selectedArchetype?.id, 'starting-profile')
   const careerProfile = parseDefinition<CareerProfile>(definitions, selectedCareer?.id, 'career-profile')
@@ -530,12 +538,81 @@ export function WizardPage() {
                 {createDraftMutation.isError ? (
                   <p className="form-error">Не удалось создать черновик. Проверьте выбранные данные и попробуйте еще раз.</p>
                 ) : null}
+
+                <ValidationPanel
+                  isCreated={createDraftMutation.isSuccess}
+                  isPending={validationQuery.isPending && createDraftMutation.isSuccess}
+                  isError={validationQuery.isError}
+                  result={validationQuery.data}
+                />
               </form>
             </div>
           )}
         </section>
       </section>
     </main>
+  )
+}
+
+type ValidationPanelProps = {
+  isCreated: boolean
+  isPending: boolean
+  isError: boolean
+  result: ValidationResultResponse | undefined
+}
+
+function ValidationPanel({ isCreated, isPending, isError, result }: ValidationPanelProps) {
+  const errors = result?.messages.filter((message) => message.severity === 'Error') ?? []
+  const warnings = result?.messages.filter((message) => message.severity === 'Warning') ?? []
+
+  return (
+    <section className="validation-panel" aria-labelledby="validation-panel-heading" aria-live="polite">
+      <div className="validation-panel-header">
+        <div>
+          <span>Проверка листа</span>
+          <h2 id="validation-panel-heading">Ошибки и предупреждения</h2>
+        </div>
+        {result ? (
+          <strong className={result.isValid ? 'validation-badge valid' : 'validation-badge invalid'}>
+            {result.isValid ? 'Можно продолжать' : 'Нужно исправить'}
+          </strong>
+        ) : null}
+      </div>
+
+      {!isCreated ? (
+        <p className="validation-empty">Создайте черновик, чтобы запустить проверку правил.</p>
+      ) : null}
+      {isPending ? <p className="validation-empty">Проверяем черновик по правилам...</p> : null}
+      {isError ? <p className="form-error">Не удалось загрузить проверку персонажа.</p> : null}
+      {isCreated && result && result.messages.length === 0 ? (
+        <p className="validation-empty">Проверка пройдена: ошибок и предупреждений нет.</p>
+      ) : null}
+
+      {errors.length > 0 ? <ValidationMessageGroup title="Ошибки" messages={errors} tone="error" /> : null}
+      {warnings.length > 0 ? <ValidationMessageGroup title="Предупреждения" messages={warnings} tone="warning" /> : null}
+    </section>
+  )
+}
+
+type ValidationMessageGroupProps = {
+  title: string
+  tone: 'error' | 'warning'
+  messages: ValidationResultResponse['messages']
+}
+
+function ValidationMessageGroup({ title, tone, messages }: ValidationMessageGroupProps) {
+  return (
+    <div className={`validation-message-group ${tone}`}>
+      <h3>{title}</h3>
+      <ul>
+        {messages.map((message) => (
+          <li key={message.code}>
+            <strong>{message.message}</strong>
+            {message.path ? <span>{message.path}</span> : null}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

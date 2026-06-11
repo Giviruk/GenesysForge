@@ -33,6 +33,57 @@ const demoCharacters = [
     updatedAt: '2026-06-11T08:00:00Z',
   },
 ]
+const demoCreatedCharacter = {
+  id: '30000000-0000-0000-0000-000000000002',
+  name: 'Мира Вейл',
+  status: 'Draft',
+  rulesetId: demoRulesetId,
+  updatedAt: '2026-06-11T08:00:00Z',
+  ruleSnapshot: {
+    rulesetId: demoRulesetId,
+    createdAt: '2026-06-11T08:00:00Z',
+    sourceVersionIds: ['10000000-0000-0000-0000-000000000003'],
+    ruleEntityIds: [
+      '10000000-0000-0000-0000-000000000004',
+      '10000000-0000-0000-0000-00000000000e',
+    ],
+    ruleDefinitionIds: [
+      '10000000-0000-0000-0000-000000000005',
+      '10000000-0000-0000-0000-00000000000f',
+    ],
+  },
+  calculatedStats: {
+    availableXp: 0,
+    spentXp: 0,
+    characteristics: {},
+    derivedStats: {},
+  },
+  draftProfile: {
+    archetypeId: '10000000-0000-0000-0000-000000000004',
+    careerId: '10000000-0000-0000-0000-00000000000e',
+    careerSkillRanksToAssign: 4,
+  },
+  skills: [
+    {
+      ruleEntityId: '10000000-0000-0000-0000-000000000010',
+      rank: 0,
+      xpSpent: 0,
+      isCareerSkill: true,
+      updatedAt: '2026-06-11T08:00:00Z',
+    },
+  ],
+}
+const demoValidationResult = {
+  isValid: true,
+  messages: [
+    {
+      code: 'character.career.starting_ranks.unassigned',
+      message: 'Назначьте 4 стартовых ранга карьерных навыков.',
+      severity: 'Warning',
+      path: 'skills',
+    },
+  ],
+}
 
 let rulesetsStatus = 200
 let rulesetsResponse = demoRulesets
@@ -60,8 +111,9 @@ beforeEach(() => {
   charactersResponse = demoCharacters
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' || input instanceof URL ? input.toString() : input.url
+      const method = init?.method ?? (input instanceof Request ? input.method : 'GET')
 
       if (url.endsWith('/api/rules/rulesets')) {
         return Response.json(rulesetsResponse, { status: rulesetsStatus })
@@ -113,6 +165,14 @@ beforeEach(() => {
           ],
           definitions: [],
         })
+      }
+
+      if (url.endsWith('/api/characters') && method === 'POST') {
+        return Response.json(demoCreatedCharacter, { status: 201 })
+      }
+
+      if (url.endsWith(`/api/characters/${demoCreatedCharacter.id}/validation`)) {
+        return Response.json(demoValidationResult)
       }
 
       if (url.endsWith('/api/characters')) {
@@ -215,6 +275,23 @@ test('validates the wizard basic info form before creating a draft', async () =>
   await user.click(createButton)
 
   expect(await screen.findByText(/укажите имя персонажа/i)).toBeInTheDocument()
+})
+
+test('shows validation warnings after creating a draft', async () => {
+  const user = userEvent.setup()
+  useAuthStore.setState({ session: demoSession })
+  window.history.pushState({}, '', '/characters/new')
+
+  render(<App />)
+
+  await user.type(await screen.findByLabelText(/имя персонажа/i), 'Мира Вейл')
+  const createButton = await screen.findByRole('button', { name: /создать черновик/i })
+  await waitFor(() => expect(createButton).not.toBeDisabled())
+  await user.click(createButton)
+
+  expect(await screen.findByText(/черновик создан: мира вейл/i)).toBeInTheDocument()
+  expect(await screen.findByText(/назначьте 4 стартовых ранга карьерных навыков/i)).toBeInTheDocument()
+  expect(screen.getByText(/можно продолжать/i)).toBeInTheDocument()
 })
 
 test('asks anonymous users to sign in before using the creation wizard', async () => {
