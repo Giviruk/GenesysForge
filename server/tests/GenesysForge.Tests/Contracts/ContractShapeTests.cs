@@ -26,6 +26,8 @@ public sealed class ContractShapeTests
         var draft = new CreateCharacterDraftRequest(
             "Asha Vorn",
             Guid.NewGuid());
+        var skillUpdate = new UpdateCharacterSkillsRequest(
+            [new UpdateCharacterSkillRequest(Guid.NewGuid(), 1)]);
 
         var catalog = new RuleCatalogResponse(
             [new RulesetDto(draft.RulesetId, "Genesys Demo", "1.0", null)],
@@ -45,6 +47,7 @@ public sealed class ContractShapeTests
 
         Assert.Equal("Player", session.User.DisplayName);
         Assert.Equal("Asha Vorn", draft.Name);
+        Assert.Single(skillUpdate.Skills);
         Assert.Single(catalog.Rulesets);
         Assert.True(validation.IsValid);
         Assert.Equal("application/pdf", pdf.ContentType);

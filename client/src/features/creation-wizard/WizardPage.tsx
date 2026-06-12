@@ -1,8 +1,9 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { NavLink } from 'react-router-dom'
-import { createCharacterDraft } from '../../api/charactersApi'
+import { createCharacterDraft, updateCharacterSkills } from '../../api/charactersApi'
+import type { CharacterDetailResponse } from '../../api/characters/CharacterDetailResponse'
 import type { CharacterSkillResponse } from '../../api/characters/CharacterSkillResponse'
 import type { RuleDefinitionDto } from '../../api/rules/RuleDefinitionDto'
 import type { RuleEntityDto } from '../../api/rules/RuleEntityDto'
@@ -74,6 +75,7 @@ type BasicInfoFormValues = {
 }
 
 export function WizardPage() {
+  const queryClient = useQueryClient()
   const session = useAuthStore((state) => state.session)
   const clearSession = useAuthStore((state) => state.clearSession)
   const selectedRulesetId = useWorkspaceStore((state) => state.selectedRulesetId)
@@ -87,6 +89,7 @@ export function WizardPage() {
   const setSelectedArchetypeId = useCreationWizardStore((state) => state.setSelectedArchetypeId)
   const setSelectedCareerId = useCreationWizardStore((state) => state.setSelectedCareerId)
   const resetWizard = useCreationWizardStore((state) => state.reset)
+  const [skillRanks, setSkillRanks] = useState<Record<string, number>>({})
 
   const rulesetsQuery = useRulesets()
   const {
@@ -141,8 +144,26 @@ export function WizardPage() {
         archetypeId: values.archetypeId || null,
         careerId: values.careerId || null,
       }),
+    onSuccess: (character) => {
+      setSkillRanks(createSkillRankState(character.skills))
+    },
   })
-  const createdCharacterId = createDraftMutation.data?.id
+  const updateSkillsMutation = useMutation({
+    mutationFn: (character: CharacterDetailResponse) =>
+      updateCharacterSkills(session?.accessToken ?? '', character.id, {
+        skills: character.skills.map((skill) => ({
+          ruleEntityId: skill.ruleEntityId,
+          rank: skillRanks[skill.ruleEntityId] ?? skill.rank,
+        })),
+      }),
+    onSuccess: (character) => {
+      setSkillRanks(createSkillRankState(character.skills))
+      void queryClient.invalidateQueries({ queryKey: ['character-validation', character.id] })
+      setCurrentStep('career')
+    },
+  })
+  const currentCharacter = updateSkillsMutation.data ?? createDraftMutation.data
+  const createdCharacterId = currentCharacter?.id
   const validationQuery = useQuery({
     enabled: Boolean(session?.accessToken && createdCharacterId),
     queryKey: ['character-validation', createdCharacterId],
@@ -151,10 +172,10 @@ export function WizardPage() {
   const archetypeProfile = parseDefinition<ArchetypeProfile>(definitions, selectedArchetype?.id, 'starting-profile')
   const careerProfile = parseDefinition<CareerProfile>(definitions, selectedCareer?.id, 'career-profile')
   const careerSkillKeys = new Set(careerProfile?.careerSkillKeys ?? [])
-  const createdSkills = createDraftMutation.data?.skills ?? []
+  const createdSkills = currentCharacter?.skills ?? []
   const characteristics = archetypeProfile?.characteristics ?? createDefaultCharacteristics()
   const derivedStats = archetypeProfile?.derivedStats ?? createDefaultDerivedStats()
-  const skillGroups = createSkillGroups(catalog?.entities ?? [], definitions, careerSkillKeys, createdSkills)
+  const skillGroups = createSkillGroups(catalog?.entities ?? [], definitions, careerSkillKeys, createdSkills, skillRanks)
 
   useEffect(() => {
     const firstRuleset = rulesetsQuery.data?.[0]
@@ -197,6 +218,8 @@ export function WizardPage() {
     setValue('archetypeId', '')
     setValue('careerId', '')
     createDraftMutation.reset()
+    updateSkillsMutation.reset()
+    setSkillRanks({})
   }
 
   function handleResetWizard() {
@@ -225,6 +248,8 @@ export function WizardPage() {
     }
 
     createDraftMutation.reset()
+    updateSkillsMutation.reset()
+    setSkillRanks({})
   }
 
   function handleCreateDraft(values: BasicInfoFormValues) {
@@ -233,6 +258,21 @@ export function WizardPage() {
     }
 
     createDraftMutation.mutate(values)
+  }
+
+  function handleSkillRankChange(ruleEntityId: string, rank: number) {
+    setSkillRanks((currentRanks) => ({
+      ...currentRanks,
+      [ruleEntityId]: rank,
+    }))
+  }
+
+  function handleSaveSkills() {
+    if (!currentCharacter || updateSkillsMutation.isPending) {
+      return
+    }
+
+    updateSkillsMutation.mutate(currentCharacter)
   }
 
   const displayName = watchedName.trim() || 'Новый персонаж'
@@ -372,6 +412,8 @@ export function WizardPage() {
                           onChange: (event) => {
                             setDraftName(event.target.value)
                             createDraftMutation.reset()
+                            updateSkillsMutation.reset()
+                            setSkillRanks({})
                           },
                         })}
                         placeholder="Например, Артур Лейвин"
@@ -488,7 +530,22 @@ export function WizardPage() {
                 </section>
 
                 <section className="sheet-section" aria-labelledby="sheet-skills-heading">
-                  <h2 id="sheet-skills-heading">Навыки</h2>
+                  <div className="sheet-section-heading">
+                    <div>
+                      <h2 id="sheet-skills-heading">Навыки</h2>
+                      <p>
+                        Стартовые ранги можно назначать карьерным навыкам. Сохранение обновит черновик и проверку листа.
+                      </p>
+                    </div>
+                    <button
+                      className="sheet-small-button"
+                      disabled={!currentCharacter || updateSkillsMutation.isPending}
+                      type="button"
+                      onClick={handleSaveSkills}
+                    >
+                      {updateSkillsMutation.isPending ? 'Сохраняем...' : 'Сохранить навыки'}
+                    </button>
+                  </div>
                   <div className="skills-grid">
                     {skillGroups.map((group) => (
                       <article className="skill-table" key={group.category}>
@@ -505,7 +562,21 @@ export function WizardPage() {
                               {skill.entity.name} ({getCharacteristicShortLabel(skill.characteristic)})
                             </span>
                             <span>{skill.isCareerSkill ? 'Да' : 'Нет'}</span>
-                            <span>{skill.rank}</span>
+                            <span>
+                              <select
+                                className="skill-rank-select"
+                                value={skill.rank}
+                                disabled={!currentCharacter || !skill.isCareerSkill || updateSkillsMutation.isPending}
+                                aria-label={`Ранг навыка ${skill.entity.name}`}
+                                onChange={(event) => handleSkillRankChange(skill.entity.id, Number(event.target.value))}
+                              >
+                                {[0, 1].map((rank) => (
+                                  <option key={rank} value={rank}>
+                                    {rank}
+                                  </option>
+                                ))}
+                              </select>
+                            </span>
                             <span className="dice-pool" aria-label={`Пул ${skill.entity.name}`}>
                               {createDicePool(characteristics[skill.characteristic] ?? 2, skill.rank).map((die, index) => (
                                 <span className={`die ${die}`} key={`${skill.entity.id}-${index}`} />
@@ -516,6 +587,13 @@ export function WizardPage() {
                       </article>
                     ))}
                   </div>
+                  {!currentCharacter ? (
+                    <p className="validation-empty">Создайте черновик, чтобы сохранять ранги навыков.</p>
+                  ) : null}
+                  {updateSkillsMutation.isSuccess ? <p className="success-note">Навыки сохранены.</p> : null}
+                  {updateSkillsMutation.isError ? (
+                    <p className="form-error">Не удалось сохранить навыки. Проверьте ранги и попробуйте еще раз.</p>
+                  ) : null}
                 </section>
 
                 <footer className="sheet-footer-actions">
@@ -653,6 +731,10 @@ function createDefaultDerivedStats() {
   }
 }
 
+function createSkillRankState(skills: CharacterSkillResponse[]) {
+  return Object.fromEntries(skills.map((skill) => [skill.ruleEntityId, skill.rank]))
+}
+
 function createDerivedCards(derivedStats: Record<string, number>) {
   return [
     {
@@ -683,6 +765,7 @@ function createSkillGroups(
   definitions: RuleDefinitionDto[],
   careerSkillKeys: Set<string>,
   createdSkills: CharacterSkillResponse[],
+  skillRanks: Record<string, number>,
 ) {
   const createdSkillByRuleEntityId = new Map(createdSkills.map((skill) => [skill.ruleEntityId, skill]))
   const skills = entities
@@ -695,7 +778,7 @@ function createSkillGroups(
         category: profile?.category ?? 'general',
         characteristic: profile?.characteristic ?? 'intellect',
         isCareerSkill: createdSkill?.isCareerSkill ?? careerSkillKeys.has(entity.key),
-        rank: createdSkill?.rank ?? 0,
+        rank: skillRanks[entity.id] ?? createdSkill?.rank ?? 0,
       }
     })
     .sort((left, right) => left.entity.name.localeCompare(right.entity.name, 'ru'))

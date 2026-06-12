@@ -33,6 +33,47 @@ const demoCharacters = [
     updatedAt: '2026-06-11T08:00:00Z',
   },
 ]
+const demoSkillEntities = [
+  {
+    id: '10000000-0000-0000-0000-000000000010',
+    rulesetId: demoRulesetId,
+    entityType: 'skill',
+    key: 'athletics',
+    name: 'Атлетика',
+    description: null,
+  },
+  {
+    id: '10000000-0000-0000-0000-000000000011',
+    rulesetId: demoRulesetId,
+    entityType: 'skill',
+    key: 'resolve',
+    name: 'Стойкость',
+    description: null,
+  },
+  {
+    id: '10000000-0000-0000-0000-000000000012',
+    rulesetId: demoRulesetId,
+    entityType: 'skill',
+    key: 'brawl',
+    name: 'Драка',
+    description: null,
+  },
+  {
+    id: '10000000-0000-0000-0000-000000000013',
+    rulesetId: demoRulesetId,
+    entityType: 'skill',
+    key: 'melee',
+    name: 'Холодное оружие',
+    description: null,
+  },
+]
+const demoSkillDefinitions = demoSkillEntities.map((skill) => ({
+  id: `${skill.id}-definition`,
+  ruleEntityId: skill.id,
+  sourceVersionId: '10000000-0000-0000-0000-000000000003',
+  key: 'skill-profile',
+  contentJson: '{"category":"combat","characteristic":"brawn"}',
+}))
 const demoCreatedCharacter = {
   id: '30000000-0000-0000-0000-000000000002',
   name: 'Мира Вейл',
@@ -63,15 +104,21 @@ const demoCreatedCharacter = {
     careerId: '10000000-0000-0000-0000-00000000000e',
     careerSkillRanksToAssign: 4,
   },
-  skills: [
-    {
-      ruleEntityId: '10000000-0000-0000-0000-000000000010',
-      rank: 0,
-      xpSpent: 0,
-      isCareerSkill: true,
-      updatedAt: '2026-06-11T08:00:00Z',
-    },
-  ],
+  skills: demoSkillEntities.map((skill) => ({
+    ruleEntityId: skill.id,
+    rank: 0,
+    xpSpent: 0,
+    isCareerSkill: true,
+    updatedAt: '2026-06-11T08:00:00Z',
+  })),
+}
+const demoUpdatedCharacter = {
+  ...demoCreatedCharacter,
+  skills: demoCreatedCharacter.skills.map((skill) => ({
+    ...skill,
+    rank: 1,
+    updatedAt: '2026-06-11T09:00:00Z',
+  })),
 }
 const demoValidationResult = {
   isValid: true,
@@ -84,11 +131,16 @@ const demoValidationResult = {
     },
   ],
 }
+const demoValidValidationResult = {
+  isValid: true,
+  messages: [],
+}
 
 let rulesetsStatus = 200
 let rulesetsResponse = demoRulesets
 let charactersStatus = 200
 let charactersResponse = demoCharacters
+let validationResponse = demoValidationResult
 
 beforeEach(() => {
   sessionStorage.clear()
@@ -109,6 +161,7 @@ beforeEach(() => {
   rulesetsResponse = demoRulesets
   charactersStatus = 200
   charactersResponse = demoCharacters
+  validationResponse = demoValidationResult
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -162,8 +215,18 @@ beforeEach(() => {
               name: 'Воин',
               description: null,
             },
+            ...demoSkillEntities,
           ],
-          definitions: [],
+          definitions: [
+            {
+              id: '10000000-0000-0000-0000-00000000000f',
+              ruleEntityId: '10000000-0000-0000-0000-00000000000e',
+              sourceVersionId: '10000000-0000-0000-0000-000000000003',
+              key: 'career-profile',
+              contentJson: '{"careerSkillKeys":["athletics","resolve","brawl","melee"],"careerSkillRanksToAssign":4}',
+            },
+            ...demoSkillDefinitions,
+          ],
         })
       }
 
@@ -171,8 +234,13 @@ beforeEach(() => {
         return Response.json(demoCreatedCharacter, { status: 201 })
       }
 
+      if (url.endsWith(`/api/characters/${demoCreatedCharacter.id}/skills`) && method === 'PUT') {
+        validationResponse = demoValidValidationResult
+        return Response.json(demoUpdatedCharacter)
+      }
+
       if (url.endsWith(`/api/characters/${demoCreatedCharacter.id}/validation`)) {
-        return Response.json(demoValidationResult)
+        return Response.json(validationResponse)
       }
 
       if (url.endsWith('/api/characters')) {
@@ -199,7 +267,7 @@ test('renders the frontend starter screen', async () => {
   expect(await screen.findByRole('combobox', { name: /набор правил/i })).toHaveTextContent(
     /Демо-набор Genesys Forge v1\.0/i,
   )
-  expect(await screen.findByText(/элементов правил: 2/i)).toBeInTheDocument()
+  expect(await screen.findByText(/элементов правил: 6/i)).toBeInTheDocument()
   expect(screen.getByLabelText(/имя персонажа/i)).toBeInTheDocument()
 })
 
@@ -292,6 +360,30 @@ test('shows validation warnings after creating a draft', async () => {
   expect(await screen.findByText(/черновик создан: мира вейл/i)).toBeInTheDocument()
   expect(await screen.findByText(/назначьте 4 стартовых ранга карьерных навыков/i)).toBeInTheDocument()
   expect(screen.getByText(/можно продолжать/i)).toBeInTheDocument()
+})
+
+test('saves career skill ranks and refreshes validation', async () => {
+  const user = userEvent.setup()
+  useAuthStore.setState({ session: demoSession })
+  window.history.pushState({}, '', '/characters/new')
+
+  render(<App />)
+
+  await user.type(await screen.findByLabelText(/имя персонажа/i), 'Мира Вейл')
+  const createButton = await screen.findByRole('button', { name: /создать черновик/i })
+  await waitFor(() => expect(createButton).not.toBeDisabled())
+  await user.click(createButton)
+
+  expect(await screen.findByText(/назначьте 4 стартовых ранга карьерных навыков/i)).toBeInTheDocument()
+
+  const rankSelects = await screen.findAllByLabelText(/ранг навыка/i)
+  for (const rankSelect of rankSelects.slice(0, 4)) {
+    await user.selectOptions(rankSelect, '1')
+  }
+  await user.click(screen.getByRole('button', { name: /сохранить навыки/i }))
+
+  expect(await screen.findByText(/навыки сохранены/i)).toBeInTheDocument()
+  expect(await screen.findByText(/проверка пройдена/i)).toBeInTheDocument()
 })
 
 test('asks anonymous users to sign in before using the creation wizard', async () => {

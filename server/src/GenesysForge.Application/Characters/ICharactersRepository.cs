@@ -13,6 +13,11 @@ public interface ICharactersRepository
         Guid ownerUserId,
         CancellationToken cancellationToken);
 
+    Task<Character?> GetByIdForOwnerForUpdateAsync(
+        Guid characterId,
+        Guid ownerUserId,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyCollection<Character>> ListForOwnerAsync(
         Guid ownerUserId,
         CancellationToken cancellationToken);

@@ -2,6 +2,7 @@ import { ApiError } from './authApi'
 import type { CharacterDetailResponse } from './characters/CharacterDetailResponse'
 import type { CharacterSummaryResponse } from './characters/CharacterSummaryResponse'
 import type { CreateCharacterDraftRequest } from './characters/CreateCharacterDraftRequest'
+import type { UpdateCharacterSkillsRequest } from './characters/UpdateCharacterSkillsRequest'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
@@ -14,6 +15,14 @@ export async function createCharacterDraft(
 
 export async function getCharacter(accessToken: string, characterId: string): Promise<CharacterDetailResponse> {
   return getJson<CharacterDetailResponse>(`/characters/${characterId}`, accessToken)
+}
+
+export async function updateCharacterSkills(
+  accessToken: string,
+  characterId: string,
+  request: UpdateCharacterSkillsRequest,
+): Promise<CharacterDetailResponse> {
+  return sendJson<CharacterDetailResponse>(`/characters/${characterId}/skills`, accessToken, 'PUT', request)
 }
 
 export async function listMyCharacters(accessToken: string): Promise<CharacterSummaryResponse[]> {
@@ -35,7 +44,7 @@ async function getJson<TResponse>(path: string, accessToken: string): Promise<TR
 async function sendJson<TResponse>(
   path: string,
   accessToken: string,
-  method: 'POST',
+  method: 'POST' | 'PUT',
   body: unknown,
 ): Promise<TResponse> {
   const response = await fetch(`${API_BASE_URL}${path}`, {

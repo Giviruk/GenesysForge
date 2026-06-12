@@ -29,6 +29,20 @@ public sealed class CharactersRepository(AppDbContext dbContext) : ICharactersRe
             .SingleOrDefaultAsync(cancellationToken);
     }
 
+    public Task<Character?> GetByIdForOwnerForUpdateAsync(
+        Guid characterId,
+        Guid ownerUserId,
+        CancellationToken cancellationToken)
+    {
+        return dbContext.Characters
+            .Include(character => character.XpLedgerEntries)
+            .Include(character => character.Skills)
+            .Include(character => character.Talents)
+            .Include(character => character.Snapshots)
+            .Where(character => character.Id == characterId && character.OwnerUserId == ownerUserId)
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<Character>> ListForOwnerAsync(
         Guid ownerUserId,
         CancellationToken cancellationToken)
