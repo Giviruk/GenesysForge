@@ -55,7 +55,13 @@ internal static class CharacterValidationEngine
             context => $"Назначьте {context.RequiredCareerSkillRanks} стартовых ранга карьерных навыков.",
             "skills",
             context => context.RequiredCareerSkillRanks > 0 &&
-                context.AssignedCareerSkillRanks < context.RequiredCareerSkillRanks)
+                context.AssignedCareerSkillRanks < context.RequiredCareerSkillRanks),
+        CharacterValidationRule.Error(
+            "character.career.starting_ranks.too_many",
+            context => $"Назначено больше {context.RequiredCareerSkillRanks} стартовых рангов карьерных навыков.",
+            "skills",
+            context => context.RequiredCareerSkillRanks > 0 &&
+                context.AssignedCareerSkillRanks > context.RequiredCareerSkillRanks)
     ];
 
     public static ValidationResultResponse Validate(CharacterDetailResponse character)

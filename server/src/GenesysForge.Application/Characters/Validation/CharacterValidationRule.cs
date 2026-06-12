@@ -15,10 +15,19 @@ internal sealed record CharacterValidationRule(
         string? path,
         Func<CharacterValidationContext, bool> isBroken)
     {
+        return Error(code, _ => message, path, isBroken);
+    }
+
+    public static CharacterValidationRule Error(
+        string code,
+        Func<CharacterValidationContext, string> message,
+        string? path,
+        Func<CharacterValidationContext, bool> isBroken)
+    {
         return new CharacterValidationRule(
             code,
             ValidationSeverity.Error,
-            _ => message,
+            message,
             path,
             isBroken);
     }

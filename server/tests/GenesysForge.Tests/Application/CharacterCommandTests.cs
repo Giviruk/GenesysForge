@@ -2,6 +2,7 @@ using GenesysForge.Application.Characters;
 using GenesysForge.Application.Characters.CreateCharacterDraft;
 using GenesysForge.Application.Characters.GetCharacterById;
 using GenesysForge.Application.Characters.ListMyCharacters;
+using GenesysForge.Application.Characters.UpdateCharacterSkills;
 using GenesysForge.Application.Characters.ValidateCharacter;
 using GenesysForge.Application.Rules;
 using GenesysForge.Domain.Characters;
@@ -230,6 +231,90 @@ public sealed class CharacterCommandTests
             result.Messages,
             message => message.Code == "character.snapshot.required" &&
                 message.Severity == ValidationSeverity.Error);
+    }
+
+    [Fact]
+    public async Task UpdateSkillsPersistsCareerRanksAndSatisfiesValidation()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var updateHandler = new UpdateCharacterSkillsCommandHandler(fixture.CharactersRepository);
+        var validateHandler = new ValidateCharacterQueryHandler(fixture.CharactersRepository);
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            CancellationToken.None);
+        var skillUpdates = created.Skills
+            .Where(skill => skill.IsCareerSkill)
+            .Take(4)
+            .Select(skill => new UpdateCharacterSkillCommandItem(skill.RuleEntityId, 1))
+            .ToArray();
+
+        var updated = await updateHandler.Handle(
+            new UpdateCharacterSkillsCommand(fixture.OwnerUserId, created.Id, skillUpdates),
+            CancellationToken.None);
+        var validation = await validateHandler.Handle(
+            new ValidateCharacterQuery(fixture.OwnerUserId, created.Id),
+            CancellationToken.None);
+
+        Assert.Equal(4, updated.Skills.Count(skill => skillUpdates.Any(update =>
+            update.RuleEntityId == skill.RuleEntityId && skill.Rank == 1 && skill.IsCareerSkill)));
+        Assert.True(validation.IsValid);
+        Assert.DoesNotContain(
+            validation.Messages,
+            message => message.Code == "character.career.starting_ranks.unassigned");
+    }
+
+    [Fact]
+    public async Task ValidateCharacterRejectsTooManyCareerSkillRanks()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var updateHandler = new UpdateCharacterSkillsCommandHandler(fixture.CharactersRepository);
+        var validateHandler = new ValidateCharacterQueryHandler(fixture.CharactersRepository);
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            CancellationToken.None);
+        var skillUpdates = created.Skills
+            .Where(skill => skill.IsCareerSkill)
+            .Take(5)
+            .Select(skill => new UpdateCharacterSkillCommandItem(skill.RuleEntityId, 1))
+            .ToArray();
+
+        await updateHandler.Handle(
+            new UpdateCharacterSkillsCommand(fixture.OwnerUserId, created.Id, skillUpdates),
+            CancellationToken.None);
+        var validation = await validateHandler.Handle(
+            new ValidateCharacterQuery(fixture.OwnerUserId, created.Id),
+            CancellationToken.None);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Messages,
+            message => message.Code == "character.career.starting_ranks.too_many" &&
+                message.Severity == ValidationSeverity.Error);
+    }
+
+    [Fact]
+    public async Task UpdateSkillsRejectsStartingRankForNonCareerSkill()
+    {
+        await using var fixture = await CharacterTestFixture.CreateAsync();
+        var createHandler = new CreateCharacterDraftCommandHandler(fixture.CharactersRepository);
+        var updateHandler = new UpdateCharacterSkillsCommandHandler(fixture.CharactersRepository);
+
+        var created = await createHandler.Handle(
+            new CreateCharacterDraftCommand(fixture.OwnerUserId, fixture.RulesetId, "Mira Vale"),
+            CancellationToken.None);
+        var nonCareerSkill = created.Skills.First(skill => !skill.IsCareerSkill);
+
+        await Assert.ThrowsAsync<CharacterSkillUpdateNotAllowedException>(() =>
+            updateHandler.Handle(
+                new UpdateCharacterSkillsCommand(
+                    fixture.OwnerUserId,
+                    created.Id,
+                    [new UpdateCharacterSkillCommandItem(nonCareerSkill.RuleEntityId, 1)]),
+                CancellationToken.None));
     }
 
     [Fact]

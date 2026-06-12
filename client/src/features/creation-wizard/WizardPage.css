@@ -335,6 +335,26 @@
   justify-self: end;
 }
 
+.sheet-section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid #d8e2ef;
+  padding-bottom: 10px;
+}
+
+.sheet-section-heading h2 {
+  justify-self: auto;
+}
+
+.sheet-section-heading p {
+  max-width: 680px;
+  margin: 5px 0 0;
+  color: #64748b;
+  line-height: 1.45;
+}
+
 .characteristics-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(86px, 1fr));
@@ -452,6 +472,26 @@
   display: flex;
   gap: 5px;
   align-items: center;
+}
+
+.skill-rank-select {
+  width: 52px;
+  border: 1px solid #cbd8e8;
+  border-radius: 6px;
+  padding: 6px 7px;
+  color: #172033;
+  background: #ffffff;
+  font-weight: 850;
+}
+
+.skill-rank-select:disabled {
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+.skill-rank-select:focus {
+  border-color: #2563eb;
+  outline: 3px solid rgb(37 99 235 / 14%);
 }
 
 .die {

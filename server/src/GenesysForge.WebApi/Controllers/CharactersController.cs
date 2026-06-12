@@ -4,6 +4,7 @@ using GenesysForge.Application.Characters;
 using GenesysForge.Application.Characters.CreateCharacterDraft;
 using GenesysForge.Application.Characters.GetCharacterById;
 using GenesysForge.Application.Characters.ListMyCharacters;
+using GenesysForge.Application.Characters.UpdateCharacterSkills;
 using GenesysForge.Application.Characters.ValidateCharacter;
 using GenesysForge.Application.Rules;
 using GenesysForge.Contracts.Characters;
@@ -83,6 +84,67 @@ public sealed class CharactersController(ISender sender) : ControllerBase
         var response = await sender.Send(new ListMyCharactersQuery(ownerUserId), cancellationToken);
 
         return Ok(response);
+    }
+
+    [HttpPut("{characterId:guid}/skills")]
+    [ProducesResponseType<CharacterDetailResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CharacterDetailResponse>> UpdateSkills(
+        Guid characterId,
+        UpdateCharacterSkillsRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var ownerUserId))
+        {
+            return Unauthorized(CreateUnauthorizedProblemDetails());
+        }
+
+        try
+        {
+            var response = await sender.Send(
+                new UpdateCharacterSkillsCommand(
+                    ownerUserId,
+                    characterId,
+                    request.Skills
+                        .Select(skill => new UpdateCharacterSkillCommandItem(skill.RuleEntityId, skill.Rank))
+                        .ToArray()),
+                cancellationToken);
+
+            return Ok(response);
+        }
+        catch (ValidationException exception)
+        {
+            return BadRequest(CreateValidationProblemDetails(exception));
+        }
+        catch (CharacterSkillUpdateNotAllowedException exception)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Навык нельзя обновить.",
+                Detail = exception.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+        catch (CharacterNotFoundException exception)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Персонаж не найден.",
+                Detail = exception.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (RuleEntityNotFoundException exception)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Навык не найден.",
+                Detail = exception.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
     }
 
     [HttpGet("{characterId:guid}/validation")]
